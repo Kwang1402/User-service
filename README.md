@@ -15,6 +15,11 @@ An User Service that serves basic functions.
     ```bash
     poetry install
     ```
+-   Start the development server
+    ```bash
+    cd user_service
+    poetry run python app.py
+    ```
 
 # Contributing Guide
 
