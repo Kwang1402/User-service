@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from marshmallow import Schema, fields, validate
+from marshmallow import Schema, fields
 
 app = Flask(__name__)
 
