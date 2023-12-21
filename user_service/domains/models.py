@@ -4,22 +4,6 @@ import uuid
 import string
 
 
-class Profile:
-    def __init__(
-        self,
-        id: str,
-        user_id: str,
-        backup_email: str,
-        gender: str,
-        date_of_birth: date,
-    ):
-        self.id = id
-        self.user_id = user_id
-        self.backup_email = backup_email
-        self.gender = gender
-        self.date_of_birth = date_of_birth
-
-
 class User:
     def __init__(
         self,
@@ -38,6 +22,22 @@ class User:
         self.updated_time = updated_time
 
 
+class Profile:
+    def __init__(
+        self,
+        id: str(uuid.uuid4()),
+        user_id: str(uuid.uuid4()),
+        backup_email: str,
+        gender: str,
+        date_of_birth: date,
+    ):
+        self.id = id
+        self.user_id = user_id
+        self.backup_email = backup_email
+        self.gender = gender
+        self.date_of_birth = date_of_birth
+
+
 class EventType:
     def __init__(
         self,
@@ -51,9 +51,9 @@ class EventType:
 class Event:
     def __init__(
         self,
-        id: str,
+        id: str(uuid.uuid4()),
         type_id: int,
-        created_by: str,
+        created_by: str(uuid.uuid4()),
     ):
         self.id = id
         self.type_id = type_id
@@ -63,8 +63,8 @@ class Event:
 class TrustedDevice:
     def __init__(
         self,
-        id: str,
-        user_id: str,
+        id: str(uuid.uuid4()),
+        user_id: str(uuid.uuid4()),
     ):
         self.id = id
         self.user_id = user_id
