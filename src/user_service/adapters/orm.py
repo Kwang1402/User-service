@@ -1,5 +1,6 @@
 import logging
 from sqlalchemy import (
+    create_engine,
     Table,
     MetaData,
     Column,
@@ -13,12 +14,15 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import registry, relationship
 
+
 from user_service.domains import models
+from user_service import config
 
 logger = logging.getLogger(__name__)
 
 mapper_registry = registry()
 metadata = MetaData()
+engine = create_engine(config.get_mysql_uri())
 
 users = Table(
     "users",
@@ -48,11 +52,10 @@ def start_mappers():
     mapper_registry.map_imperatively(
         models.User,
         users,
-        properties={
-            "profile": relationship(models.Profile, backref="users", uselist=False)
-        },
+        properties={"profile": relationship(models.Profile, backref="users", uselist=False)},
     )
     mapper_registry.map_imperatively(models.Profile, profiles)
+    mapper_registry.metadata.create_all(bind=engine)
 
 
 @event.listens_for(models.User, "load")

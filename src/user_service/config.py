@@ -7,7 +7,8 @@ def get_mysql_uri():
         "database": "user_service_db",
     }
 
-    mysql_uri = f"mysql+mysqlconnector://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}"
+    # mysql_uri = f"mysql+mysqlconnector://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}"
+    mysql_uri = "sqlite:///:memory:"
 
     return mysql_uri
 

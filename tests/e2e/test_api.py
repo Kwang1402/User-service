@@ -1,4 +1,5 @@
 import pytest
+from icecream import ic
 import requests
 from tests import random_refs
 from user_service import config
@@ -46,7 +47,7 @@ def cleanup_user(mysql_session):
 
 
 @pytest.mark.usefixtures("mysql_db")
-@pytest.mark.usefixtures("restart_api")
+# @pytest.mark.usefixtures("restart_api")
 def test_registered_successfully_returns_201(data, cleanup_user, mysql_session):
     url = config.get_api_url()
     r = requests.post(f"{url}/register", json=data)
@@ -56,7 +57,7 @@ def test_registered_successfully_returns_201(data, cleanup_user, mysql_session):
 
     user = mysql_session.query(models.User).filter_by(email=data["email"]).first()
     assert user is not None
-
+    profile = user.profile
     cleanup_user.append(user.id)
 
 
@@ -69,15 +70,9 @@ def test_registered_invalid_password_returns_400(
     r = requests.post(f"{url}/register", json=invalid_password_data)
     print(r.__dict__)
     assert r.status_code == 400
-    assert r.json() == {
-        "error": f"Invalid password '{invalid_password_data['password']}'"
-    }
+    assert r.json() == {"error": f"Invalid password '{invalid_password_data['password']}'"}
 
-    user = (
-        mysql_session.query(models.User)
-        .filter_by(email=invalid_password_data["email"])
-        .first()
-    )
+    user = mysql_session.query(models.User).filter_by(email=invalid_password_data["email"]).first()
     assert user is None
 
     if user is not None:

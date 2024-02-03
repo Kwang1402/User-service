@@ -13,9 +13,10 @@ from src.user_service import config
 
 @pytest.fixture
 def test_db():
-    engine = create_engine(
-        "mysql+mysqlconnector://root:1402@localhost/user_service_test_db", echo=True
-    )
+    engine = create_engine("sqlite:///:memory:")
+    # engine = create_engine(
+    #     "mysql+mysqlconnector://root:1402@localhost/user_service_test_db", echo=True
+    # )
     metadata.create_all(engine)
     return engine
 
@@ -48,9 +49,11 @@ def wait_for_webapp():
         pytest.fail("API never came up")
 
 
-@pytest.fixture(scope="session")
-def mysql_db():
-    engine = create_engine(config.get_mysql_uri())
+# @pytest.fixture(scope="session")
+@pytest.fixture
+def mysql_db(test_db):
+    # engine = create_engine(config.get_mysql_uri())
+    engine = test_db
     wait_for_mysql(engine)
     metadata.create_all(engine)
     return engine

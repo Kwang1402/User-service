@@ -7,6 +7,7 @@ class Command:
 
 
 @dataclass
+# class RegisterCommand(Command):
 class Register(Command):
     username: str
     email: str

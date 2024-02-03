@@ -1,10 +1,10 @@
-from dataclasses import dataclass
+import dataclasses
 
 
 class Event:
     pass
 
 
-@dataclass
+@dataclasses.dataclass
 class Registered(Event):
-    id: str
+    user_id: str

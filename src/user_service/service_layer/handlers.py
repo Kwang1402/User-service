@@ -52,24 +52,29 @@ def register(
                 cmd.username,
                 cmd.email,
                 cmd.password,
-                models.Profile(
-                    cmd.backup_email,
-                    cmd.gender,
-                    cmd.date_of_birth,
-                ),
+                # models.Profile(
+                #     cmd.backup_email,
+                #     cmd.gender,
+                #     cmd.date_of_birth,
+                # ),
             )
         )
         uow.commit()
 
 
-def registered(
+def create_user_profile(
     event: events.Registered,
+    uow: unit_of_work.AbstractUnitOfWork,
 ):
-    print(f"Registed user {event.id}")
+    with uow:
+        profile = models.Profile(user_id=event.user_id)
+        uow.users.add(profile)
+        uow.commit()
+    # print(f"Registed user {event.id}")
 
 
 EVENT_HANDLERS = {
-    events.Registered: [registered],
+    events.Registered: [create_user_profile],
 }
 
 COMMAND_HANDLERS = {
