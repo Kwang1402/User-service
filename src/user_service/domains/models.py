@@ -31,8 +31,8 @@ class User(BaseModel):
         self.locked = locked
         self.events = []
         # self.profile = Profile()
-        event = events.Registered(user_id=self.id)
-        self.events.append(event)
+        # event = events.Registered(user_id=self.id)
+        # self.events.append(event)
 
     def __repr__(self):
         return f"<User {self.id}>"

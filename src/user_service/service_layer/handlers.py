@@ -60,7 +60,7 @@ def create_user_profile(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
-        profile = models.Profile(user_id=event.user_id)
+        profile = models.Profile(event.user_id, event.backup_email, event.gender, event.date_of_birth)
         user = uow.users.get(id=event.user_id)
         user.profile = profile
 

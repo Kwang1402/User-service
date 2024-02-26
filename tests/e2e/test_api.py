@@ -1,5 +1,4 @@
 import pytest
-from icecream import ic
 import requests
 from tests import random_refs
 from user_service import config

@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 mapper_registry = registry()
 metadata = MetaData()
-engine = create_engine(config.get_mysql_uri())
+engine = create_engine(config.get_sqlite_uri())
 
 users = Table(
     "users",
