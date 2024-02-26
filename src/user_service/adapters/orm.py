@@ -12,7 +12,7 @@ from sqlalchemy import (
     ForeignKey,
     event,
 )
-from sqlalchemy.orm import registry, relationship
+from sqlalchemy.orm import registry, relationship, clear_mappers
 
 
 from user_service.domains import models

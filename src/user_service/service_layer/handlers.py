@@ -36,7 +36,7 @@ def validate_password(password: str) -> bool:
 
 
 def register(
-    cmd: commands.Register,
+    cmd: commands.RegisterCommand,
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
@@ -45,20 +45,13 @@ def register(
         user = uow.users.get_by_email(email=cmd.email)
         if user:
             raise EmailExisted(f"Email {cmd.email} already existed")
-        # user_id = str(uuid.uuid4())
-        # profile_id = str(uuid.uuid4())
-        uow.users.add(
-            models.User(
-                cmd.username,
-                cmd.email,
-                cmd.password,
-                # models.Profile(
-                #     cmd.backup_email,
-                #     cmd.gender,
-                #     cmd.date_of_birth,
-                # ),
-            )
+
+        user = models.User(cmd.username, cmd.email, cmd.password)
+        uow.users.add(user)
+        user.events.append(
+            events.Registered(user.id, cmd.backup_email, cmd.gender, cmd.date_of_birth)
         )
+
         uow.commit()
 
 
@@ -68,9 +61,10 @@ def create_user_profile(
 ):
     with uow:
         profile = models.Profile(user_id=event.user_id)
-        uow.users.add(profile)
+        user = uow.users.get(id=event.user_id)
+        user.profile = profile
+
         uow.commit()
-    # print(f"Registed user {event.id}")
 
 
 EVENT_HANDLERS = {
@@ -78,5 +72,5 @@ EVENT_HANDLERS = {
 }
 
 COMMAND_HANDLERS = {
-    commands.Register: register,
+    commands.RegisterCommand: register,
 }

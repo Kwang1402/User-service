@@ -1,26 +1,18 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, blueprints
 
 from user_service import bootstrap
 from user_service.domains import commands
 from user_service.service_layer.handlers import InvalidPassword, EmailExisted
 
-app = Flask(__name__)
+bp = blueprints.Blueprint("user", __name__)
 bus = bootstrap.bootstrap()
 
 
-@app.route("/register", methods=["POST"])
+@bp.route("/register", methods=["POST"])
 def register():
     try:
         body = request.json
-        cmd = commands.Register(
-            **body
-            # request.json["username"],
-            # request.json["email"],
-            # request.json["password"],
-            # request.json["backup_email"],
-            # request.json["gender"],
-            # request.json["date_of_birth"],
-        )
+        cmd = commands.RegisterCommand(**body)
         bus.handle(cmd)
     except (InvalidPassword, EmailExisted) as e:
         return jsonify({"error": str(e)}), 400
@@ -28,5 +20,12 @@ def register():
     return jsonify({"message": "User successfully registered"}), 201
 
 
+def create_app():
+    app = Flask(__name__)
+    app.register_blueprint(bp)
+    return app
+
+
 if __name__ == "__main__":
+    app = create_app()
     app.run(debug=True)

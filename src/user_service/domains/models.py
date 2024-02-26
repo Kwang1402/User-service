@@ -1,12 +1,20 @@
 from __future__ import annotations
 from datetime import date, datetime
-from typing import Optional
 import uuid
 
 from user_service.domains import events
 
 
-class User:
+class BaseModel:
+    def __init__(
+        self,
+    ):
+        self.id = str(uuid.uuid4())
+        self.created_time = datetime.utcnow()
+        self.updated_time = datetime.utcnow()
+
+
+class User(BaseModel):
     def __init__(
         self,
         username: str,
@@ -14,18 +22,13 @@ class User:
         password: str,
         profile: Profile = None,
         locked: bool = False,
-        id: str = str(uuid.uuid4()),
-        created_time: datetime = datetime.utcnow(),
-        updated_time: datetime = datetime.utcnow(),
     ):
-        self.id = id
+        super().__init__()
         self.username = username
         self.email = email
         self.password = password
         self.profile = profile
         self.locked = locked
-        self.created_time = created_time
-        self.updated_time = updated_time
         self.events = []
         # self.profile = Profile()
         event = events.Registered(user_id=self.id)
@@ -43,16 +46,15 @@ class User:
         return hash(self.id)
 
 
-class Profile:
+class Profile(BaseModel):
     def __init__(
         self,
         user_id: str,
         backup_email: str = None,
         gender: str = None,
-        date_of_birth: str = None,
-        id: str = str(uuid.uuid4()),
+        date_of_birth: date = None,
     ):
-        self.id = id
+        super().__init__()
         self.user_id = user_id
         self.backup_email = backup_email
         self.gender = gender
