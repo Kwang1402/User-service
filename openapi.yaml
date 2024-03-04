@@ -1,0 +1,51 @@
+openapi: 3.0.0
+info:
+  title: User Service API
+  version: 1.0.0
+paths:
+  /register:
+    post:
+      tags:
+      - User
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The username of the new user
+                  example: 'Username'
+                password:
+                  type: string
+                  description: The password of the new user
+                  example: 'Password'
+              required:
+                - username
+                - password
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A success message
+                    example: User successfully registered
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Details about the error, such as missing username or password
+                    example: "Missing username or password"
