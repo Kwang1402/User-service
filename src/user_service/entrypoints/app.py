@@ -14,8 +14,11 @@ def register():
         body = request.json
         cmd = commands.RegisterCommand(**body)
         bus.handle(cmd)
-    except (InvalidPassword, EmailExisted) as e:
+    except InvalidPassword as e:
         return jsonify({"error": str(e)}), 400
+
+    except EmailExisted as e:
+        return jsonify({"error": str(e)}), 409
 
     return jsonify({"message": "User successfully registered"}), 201
 

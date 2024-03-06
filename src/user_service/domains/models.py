@@ -2,8 +2,6 @@ from __future__ import annotations
 from datetime import date, datetime
 import uuid
 
-from user_service.domains import events
-
 
 class BaseModel:
     def __init__(
@@ -30,9 +28,6 @@ class User(BaseModel):
         self.profile = profile
         self.locked = locked
         self.events = []
-        # self.profile = Profile()
-        # event = events.Registered(user_id=self.id)
-        # self.events.append(event)
 
     def __repr__(self):
         return f"<User {self.id}>"

@@ -52,7 +52,9 @@ def start_mappers():
     mapper_registry.map_imperatively(
         models.User,
         users,
-        properties={"profile": relationship(models.Profile, backref="users", uselist=False)},
+        properties={
+            "profile": relationship(models.Profile, backref="users", uselist=False)
+        },
     )
     mapper_registry.map_imperatively(models.Profile, profiles)
     mapper_registry.metadata.create_all(bind=engine)

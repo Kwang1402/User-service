@@ -57,12 +57,9 @@ def cleanup_user(sqlite_session):
 
 
 @pytest.mark.usefixtures("sqlite_db")
-# @pytest.mark.usefixtures("restart_api")
 def test_registered_successfully_returns_201(
     client, data, cleanup_user, sqlite_session
 ):
-    # url = config.get_api_url()
-    # r = requests.post(f"{url}/register", json=data)
     r = client.post("/register", json=data)
     print(r.__dict__)
     assert r.status_code == 201
@@ -70,17 +67,22 @@ def test_registered_successfully_returns_201(
 
     user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
     assert user is not None
+    assert user.username == data["username"]
+    assert user.email == data["email"]
+    assert user.password == data["password"]
+
     profile = user.profile
+    assert profile.backup_email == data["backup_email"]
+    assert profile.gender == data["gender"]
+    assert profile.date_of_birth == data["date_of_birth"]
+
     cleanup_user.append(user.id)
 
 
 @pytest.mark.usefixtures("sqlite_db")
-# @pytest.mark.usefixtures("restart_api")
 def test_registered_invalid_password_returns_400(
     client, invalid_password_data, cleanup_user, sqlite_session
 ):
-    # url = config.get_api_url()
-    # r = requests.post(f"{url}/register", json=invalid_password_data)
     r = client.post("/register", json=invalid_password_data)
     print(r.__dict__)
     assert r.status_code == 400
@@ -97,7 +99,7 @@ def test_registered_invalid_password_returns_400(
         cleanup_user.append(user.id)
 
 
-def test_registered_email_already_existed_returns_400(
+def test_registered_email_already_existed_returns_409(
     client,
     data,
     email_already_existed_data,
@@ -116,7 +118,7 @@ def test_registered_email_already_existed_returns_400(
 
     r = client.post("/register", json=email_already_existed_data)
     print(r.__dict__)
-    assert r.status_code == 400
+    assert r.status_code == 409
     assert (
         r.json["error"]
         == f"Email {email_already_existed_data['email']} already existed"
