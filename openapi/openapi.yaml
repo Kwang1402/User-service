@@ -2,6 +2,8 @@ openapi: 3.0.0
 info:
   title: User Service API
   version: 1.0.0
+servers: 
+  - url: http://127.0.0.1:5000
 paths:
   /register:
     post:
@@ -9,7 +11,6 @@ paths:
       - User
       summary: Register a new user
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -18,13 +19,24 @@ paths:
                 username:
                   type: string
                   description: The username of the new user
-                  example: 'Username'
+                email:
+                  type: string
+                  description: The email of the new user
                 password:
                   type: string
                   description: The password of the new user
-                  example: 'Password'
-              required:
+                backup_email:
+                  type: string
+                  description: The backup email for account recovery
+                gender:
+                  type: string
+                  description: The gender of the new user
+                date_of_birth:
+                  type: string
+                  description: The date of birth of the new user
+              required: 
                 - username
+                - email
                 - password
       responses:
         '201':
@@ -36,10 +48,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    description: A success message
                     example: User successfully registered
         '400':
-          description: Bad request
+          description: Invalid password
           content:
             application/json:
               schema:
@@ -47,5 +58,14 @@ paths:
                 properties:
                   error:
                     type: string
-                    description: Details about the error, such as missing username or password
-                    example: "Missing username or password"
+                    example: "Invalid password '{password}'"
+        '409':
+          description: Email already existed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Email {email} already existed"
