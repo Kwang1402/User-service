@@ -124,4 +124,5 @@ EVENT_HANDLERS = {
 COMMAND_HANDLERS = {
     commands.RegisterCommand: register,
     commands.LoginCommand: login,
+    commands.GetUserCommand: get_user,
 }

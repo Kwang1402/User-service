@@ -50,7 +50,7 @@ def get_user(user_id):
     except UnathorizedAccess as e:
         return jsonify({"error": str(e)}), 401
 
-    return user, 200
+    return jsonify({"user": user}), 200
 
 
 def create_app():

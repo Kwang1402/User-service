@@ -2,6 +2,7 @@ import pytest
 from tests import random_refs
 from user_service.domains import models
 from flask_bcrypt import Bcrypt
+import jwt
 
 bcrypt = Bcrypt()
 
@@ -192,4 +193,76 @@ def test_logged_in_incorrect_password_returns_401(
     print(r.__dict__)
     assert r.status_code == 401
     assert r.json["error"] == "Incorrect email or password"
+    cleanup_user.append(user.id)
+
+def test_get_user_successfully_returns_200(
+    client,
+    data,
+    cleanup_user,
+    sqlite_session,     
+):
+    r = client.post("/register", json=data)
+    print(r.__dict__)
+    assert r.status_code == 201
+    assert r.json["message"] == "User successfully registered"
+
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    assert user is not None
+
+    r = client.post(
+        "/login", json={"email": data["email"], "password": data["password"]}
+    )
+    print(r.__dict__)
+    assert r.status_code == 200
+    assert r.json["token"] is not None
+    
+    token = r.json["token"]
+    r = client.get(
+        f"/user/{user.id}", headers={'Authorization': f'Bearer {token}'}
+    )
+    print(r.__dict__)
+    assert r.status_code == 200
+    assert r.json["user"] == {"username": user.username, "email": user.email}
+    cleanup_user.append(user.id)
+
+def test_get_user_missing_token_returns_401(
+    client,
+    data,
+    cleanup_user,
+    sqlite_session,
+):
+    r = client.post("/register", json=data)
+    print(r.__dict__)
+    assert r.status_code == 201
+    assert r.json["message"] == "User successfully registered"
+
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    assert user is not None
+
+    r = client.get(f"/user/{user.id}")
+    print(r.__dict__)
+    assert r.status_code == 401
+    assert r.json["error"] == "Authorization token missing"
+    cleanup_user.append(user.id)
+
+def test_get_user_invalid_token_returns_401(
+    client,
+    data,
+    cleanup_user,
+    sqlite_session
+):
+    r = client.post("/register", json=data)
+    print(r.__dict__)
+    assert r.status_code == 201
+    assert r.json["message"] == "User successfully registered"
+
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    assert user is not None
+
+    invalid_token = jwt.encode({"user_id": user.id}, "random_key", algorithm="HS256")
+
+    r = client.get(f"/user/{user.id}", headers={'Authorization': f'Bearer {invalid_token}'})
+    print(r.__dict__)
+    assert r.status_code == 401
+    assert r.json["error"] == "Invalid token"
     cleanup_user.append(user.id)
