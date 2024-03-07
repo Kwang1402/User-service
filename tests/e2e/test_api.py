@@ -1,8 +1,9 @@
 import pytest
-import requests
 from tests import random_refs
-from user_service import config
 from user_service.domains import models
+from flask_bcrypt import Bcrypt
+
+bcrypt = Bcrypt()
 
 
 @pytest.fixture
@@ -69,7 +70,7 @@ def test_registered_successfully_returns_201(
     assert user is not None
     assert user.username == data["username"]
     assert user.email == data["email"]
-    assert user.password == data["password"]
+    assert bcrypt.check_password_hash(user.password, data["password"])
 
     profile = user.profile
     assert profile.backup_email == data["backup_email"]
@@ -131,4 +132,64 @@ def test_registered_email_already_existed_returns_409(
     )
     assert user_count == 1
 
+    cleanup_user.append(user.id)
+
+
+def test_logged_in_successfully_returns_200(
+    client,
+    data,
+    cleanup_user,
+    sqlite_session,
+):
+    r = client.post("/register", json=data)
+    print(r.__dict__)
+    assert r.status_code == 201
+    assert r.json["message"] == "User successfully registered"
+
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    assert user is not None
+
+    r = client.post(
+        "/login", json={"email": data["email"], "password": data["password"]}
+    )
+    print(r.__dict__)
+    assert r.status_code == 200
+    assert r.json["token"] is not None
+    cleanup_user.append(user.id)
+
+
+def test_logged_in_incorrect_email_returns_401(
+    client,
+    data,
+    sqlite_session,
+):
+    r = client.post(
+        "/login", json={"email": data["email"], "password": data["password"]}
+    )
+    print(r.__dict__)
+    assert r.status_code == 401
+    assert r.json["error"] == "Incorrect email or password"
+
+
+def test_logged_in_incorrect_password_returns_401(
+    client,
+    data,
+    cleanup_user,
+    sqlite_session,
+):
+    r = client.post("/register", json=data)
+    print(r.__dict__)
+    assert r.status_code == 201
+    assert r.json["message"] == "User successfully registered"
+
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    assert user is not None
+
+    r = client.post(
+        "/login",
+        json={"email": data["email"], "password": random_refs.random_valid_password()},
+    )
+    print(r.__dict__)
+    assert r.status_code == 401
+    assert r.json["error"] == "Incorrect email or password"
     cleanup_user.append(user.id)

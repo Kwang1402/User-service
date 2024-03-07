@@ -83,7 +83,6 @@ def sqlite_session(sqlite_db):
     clear_mappers()
     start_mappers()
     yield sessionmaker(bind=sqlite_db)()
-    clear_mappers()
 
 
 @pytest.fixture
