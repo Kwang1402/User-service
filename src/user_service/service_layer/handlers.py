@@ -1,4 +1,3 @@
-import logging
 from typing import List, Dict, Callable, Type
 from user_service.domains import commands, events, models
 from user_service.service_layer import unit_of_work
@@ -6,6 +5,7 @@ from user_service.config import secret_key
 import jwt
 from flask_bcrypt import Bcrypt
 import string
+from tests import random_refs
 
 bcrypt = Bcrypt()
 
@@ -117,12 +117,42 @@ def get_user(
             raise UnathorizedAccess("Invalid token")
 
 
+def reset_password(
+    cmd: commands.ResetPasswordCommand,
+    uow: unit_of_work.AbstractUnitOfWork,
+):
+    with uow:
+        user = uow.users.get_by_email(email=cmd.email)
+        if user is None or user.username != cmd.username:
+            raise IncorrectCredentials("Incorrect email or username")
+
+        new_password = random_refs.random_valid_password()
+        user.events.append(events.ResetPassword(user.id, new_password))
+        return new_password
+
+
+def change_user_password(
+    event: events.ResetPassword,
+    uow: unit_of_work.AbstractUnitOfWork,
+):
+    with uow:
+        user = uow.users.get(event.user_id)
+        hashed_password = bcrypt.generate_password_hash(event.new_password).decode(
+            "utf-8"
+        )
+        user.password = hashed_password
+
+        uow.commit()
+
+
 EVENT_HANDLERS = {
     events.Registered: [create_user_profile],
-}
+    events.ResetPassword: [change_user_password],
+}  # type: Dict[Type[events.Event], List[Callable]]
 
 COMMAND_HANDLERS = {
     commands.RegisterCommand: register,
     commands.LoginCommand: login,
     commands.GetUserCommand: get_user,
-}
+    commands.ResetPasswordCommand: reset_password,
+}  # type: Dict[Type[commands.Command], Callable]

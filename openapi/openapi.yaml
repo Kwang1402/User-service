@@ -154,3 +154,43 @@ paths:
                   error:
                     type: string
                     example: "Unauthorized"
+  /reset-password:
+    post:
+      tags:
+        - User
+      summary: Reset password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: The email of the user
+                username:
+                  type: string
+                  description: The username of the user
+              required: 
+                - email
+                - username
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  new_password:
+                    type: string
+        '400':
+          description: Incorrect email or username
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: 
+                    type: string
+                    example: "Incorrect email or username"

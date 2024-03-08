@@ -53,6 +53,18 @@ def get_user(user_id):
     return jsonify({"user": user}), 200
 
 
+@bp.route("/reset-password", methods=["POST"])
+def reset_password():
+    try:
+        body = request.json
+        cmd = commands.ResetPasswordCommand(**body)
+        new_password = bus.handle(cmd)
+    except IncorrectCredentials as e:
+        return jsonify({"error": str(e)}), 400
+
+    return jsonify({"new_password": new_password}), 200
+
+
 def create_app():
     app = Flask(__name__)
     app.register_blueprint(bp)

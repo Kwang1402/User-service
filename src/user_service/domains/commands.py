@@ -26,3 +26,9 @@ class LoginCommand(Command):
 class GetUserCommand(Command):
     user_id: str
     token: str
+
+
+@dataclasses.dataclass
+class ResetPasswordCommand(Command):
+    email: str
+    username: str
