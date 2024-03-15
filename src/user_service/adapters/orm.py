@@ -5,14 +5,13 @@ from sqlalchemy import (
     MetaData,
     Column,
     String,
-    Integer,
     Boolean,
     Date,
-    DateTime,
+    TIMESTAMP,
     ForeignKey,
     event,
 )
-from sqlalchemy.orm import registry, relationship, clear_mappers
+from sqlalchemy.orm import registry, relationship
 
 
 from user_service.domains import models
@@ -27,23 +26,25 @@ engine = create_engine(config.get_sqlite_uri())
 users = Table(
     "users",
     metadata,
-    Column("id", String(255), primary_key=True),
-    Column("username", String(255)),
-    Column("email", String(255)),
-    Column("password", String(255)),
+    Column("id", String, primary_key=True),
+    Column("username", String),
+    Column("email", String),
+    Column("password", String),
     Column("locked", Boolean),
-    Column("created_time", DateTime),
-    Column("updated_time", DateTime),
+    Column("created_time", TIMESTAMP),
+    Column("updated_time", TIMESTAMP),
 )
 
 profiles = Table(
     "profiles",
     metadata,
-    Column("id", String(255), primary_key=True),
-    Column("user_id", String(255), ForeignKey("users.id"), nullable=False),
-    Column("backup_email", String(255)),
-    Column("gender", String(10)),
+    Column("id", String, primary_key=True),
+    Column("user_id", String, ForeignKey("users.id"), nullable=False),
+    Column("backup_email", String),
+    Column("gender", String),
     Column("date_of_birth", Date),
+    Column("created_time", TIMESTAMP),
+    Column("updated_time", TIMESTAMP),
 )
 
 
