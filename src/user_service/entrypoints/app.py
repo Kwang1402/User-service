@@ -33,7 +33,8 @@ def login():
     try:
         body = request.json
         cmd = commands.LoginCommand(**body)
-        token = bus.handle(cmd)
+        results = bus.handle(cmd)
+        token = results[0]
 
     except IncorrectCredentials as e:
         return jsonify({"error": str(e)}), 401
@@ -46,7 +47,9 @@ def get_user(user_id):
     try:
         token = request.headers.get("Authorization", "").replace("Bearer ", "")
         cmd = commands.GetUserCommand(user_id, token)
-        user = bus.handle(cmd)
+        results = bus.handle(cmd)
+        user = results[0]
+
     except UnathorizedAccess as e:
         return jsonify({"error": str(e)}), 401
 
@@ -58,7 +61,9 @@ def reset_password():
     try:
         body = request.json
         cmd = commands.ResetPasswordCommand(**body)
-        new_password = bus.handle(cmd)
+        results = bus.handle(cmd)
+        new_password = results[0]
+
     except IncorrectCredentials as e:
         return jsonify({"error": str(e)}), 400
 

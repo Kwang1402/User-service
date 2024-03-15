@@ -1,7 +1,7 @@
 from typing import List, Dict, Callable, Type
 from user_service.domains import commands, events, models
 from user_service.service_layer import unit_of_work
-from user_service.config import secret_key
+from user_service.config import SECRET_KEY
 import jwt
 from flask_bcrypt import Bcrypt
 import string
@@ -51,7 +51,7 @@ def validate_token(token, user_id):
         raise UnathorizedAccess("Authorization token missing")
 
     try:
-        decoded_token = jwt.decode(token, secret_key, algorithms=["HS256"])
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         authenticated_user_id = decoded_token.get("user_id")
 
         if authenticated_user_id != user_id:
@@ -122,7 +122,7 @@ def login(
         if user is None or not bcrypt.check_password_hash(user.password, cmd.password):
             raise IncorrectCredentials("Incorrect email or password")
 
-        token = jwt.encode({"user_id": user.id}, secret_key, algorithm="HS256")
+        token = jwt.encode({"user_id": user.id}, SECRET_KEY, algorithm="HS256")
 
         return token
 

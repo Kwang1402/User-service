@@ -1,6 +1,6 @@
 import sqlalchemy
 
-secret_key = "sample_user_service_secret_key"
+SECRET_KEY = "sample_user_service_secret_key"
 
 
 def get_sqlite_uri():
