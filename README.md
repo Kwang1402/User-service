@@ -17,8 +17,7 @@ An User Service that serves basic functions.
     ```
 -   Start the development server
     ```bash
-    cd user_service
-    poetry run python app.py
+    poetry run python src/user_service/entrypoints/app.py
     ```
 
 # Contributing Guide

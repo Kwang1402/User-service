@@ -1,5 +1,7 @@
 import sqlalchemy
 
+secret_key = "sample_user_service_secret_key"
+
 
 def get_sqlite_uri():
     sqlite_uri = "sqlite:///user_service.db"

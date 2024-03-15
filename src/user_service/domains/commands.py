@@ -14,3 +14,21 @@ class RegisterCommand(Command):
     backup_email: str
     gender: str
     date_of_birth: date
+
+
+@dataclasses.dataclass
+class LoginCommand(Command):
+    email: str
+    password: str
+
+
+@dataclasses.dataclass
+class GetUserCommand(Command):
+    user_id: str
+    token: str
+
+
+@dataclasses.dataclass
+class ResetPasswordCommand(Command):
+    email: str
+    username: str
