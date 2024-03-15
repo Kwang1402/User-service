@@ -102,6 +102,7 @@ def test_registered_invalid_password_returns_400(
         cleanup_user.append(user.id)
 
 
+@pytest.mark.usefixtures("sqlite_db")
 def test_registered_email_already_existed_returns_409(
     client,
     data,
@@ -132,6 +133,7 @@ def test_registered_email_already_existed_returns_409(
     cleanup_user.append(user.id)
 
 
+@pytest.mark.usefixtures("sqlite_db")
 def test_logged_in_successfully_returns_200(
     client,
     data,
@@ -155,6 +157,7 @@ def test_logged_in_successfully_returns_200(
     cleanup_user.append(user.id)
 
 
+@pytest.mark.usefixtures("sqlite_db")
 def test_logged_in_incorrect_email_returns_401(
     client,
     data,
@@ -168,6 +171,7 @@ def test_logged_in_incorrect_email_returns_401(
     assert r.json["error"] == "Incorrect email or password"
 
 
+@pytest.mark.usefixtures("sqlite_db")
 def test_logged_in_incorrect_password_returns_401(
     client,
     data,
@@ -192,6 +196,7 @@ def test_logged_in_incorrect_password_returns_401(
     cleanup_user.append(user.id)
 
 
+@pytest.mark.usefixtures("sqlite_db")
 def test_get_user_successfully_returns_200(
     client,
     data,
@@ -221,6 +226,7 @@ def test_get_user_successfully_returns_200(
     cleanup_user.append(user.id)
 
 
+@pytest.mark.usefixtures("sqlite_db")
 def test_get_user_missing_token_returns_401(
     client,
     data,
@@ -242,6 +248,7 @@ def test_get_user_missing_token_returns_401(
     cleanup_user.append(user.id)
 
 
+@pytest.mark.usefixtures("sqlite_db")
 def test_get_user_invalid_token_returns_401(
     client,
     data,
@@ -267,6 +274,7 @@ def test_get_user_invalid_token_returns_401(
     cleanup_user.append(user.id)
 
 
+@pytest.mark.usefixtures("sqlite_db")
 def test_get_user_unmatching_user_id_returns_401(
     client,
     data,
@@ -306,6 +314,7 @@ def test_get_user_unmatching_user_id_returns_401(
     cleanup_user.append(user2.id)
 
 
+@pytest.mark.usefixtures("sqlite_db")
 def test_reset_password_successfully_returns_200(
     client,
     data,
@@ -317,13 +326,10 @@ def test_reset_password_successfully_returns_200(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
-    assert user is not None
-
     r = client.post(
-        "/reset-password", json={"email": user.email, "username": user.username}
+        "/reset-password", json={"email": data["email"], "username": data["username"]}
     )
-    sqlite_session.commit()
+
     user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
 
     print(r.__dict__)
@@ -331,11 +337,9 @@ def test_reset_password_successfully_returns_200(
     assert bcrypt.check_password_hash(user.password, r.json["new_password"])
     cleanup_user.append(user.id)
 
-def test_reset_password_incorrect_email_returns_400(
-    client,
-    data,
-    sqlite_session
-):
+
+@pytest.mark.usefixtures("sqlite_db")
+def test_reset_password_incorrect_email_returns_400(client, data, sqlite_session):
     r = client.post(
         "/reset-password", json={"email": data["email"], "username": data["username"]}
     )
@@ -343,6 +347,8 @@ def test_reset_password_incorrect_email_returns_400(
     assert r.status_code == 400
     assert r.json["error"] == "Incorrect email or username"
 
+
+@pytest.mark.usefixtures("sqlite_db")
 def test_reset_password_incorrect_username_returns_400(
     client,
     data,

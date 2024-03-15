@@ -12,9 +12,3 @@ class Registered(Event):
     backup_email: str
     gender: str
     date_of_birth: date
-
-
-@dataclasses.dataclass
-class ResetPassword(Event):
-    user_id: str
-    new_password: str

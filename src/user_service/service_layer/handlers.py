@@ -5,7 +5,7 @@ from user_service.config import secret_key
 import jwt
 from flask_bcrypt import Bcrypt
 import string
-from tests import random_refs
+import random
 
 bcrypt = Bcrypt()
 
@@ -44,6 +44,37 @@ def validate_password(password: str) -> bool:
         return False
 
     return True
+
+
+def validate_token(token, user_id):
+    if not token:
+        raise UnathorizedAccess("Authorization token missing")
+
+    try:
+        decoded_token = jwt.decode(token, secret_key, algorithms=["HS256"])
+        authenticated_user_id = decoded_token.get("user_id")
+
+        if authenticated_user_id != user_id:
+            raise UnathorizedAccess("Unauthorized access to user account")
+
+    except jwt.InvalidTokenError:
+        raise UnathorizedAccess("Invalid token")
+
+
+def random_valid_password(length=12):
+    lowercase_letters = string.ascii_lowercase
+    uppercase_letters = string.ascii_uppercase
+    digits = string.digits
+    special_characters = string.punctuation
+    all_characters = lowercase_letters + uppercase_letters + digits + special_characters
+
+    password = "".join(random.choice(all_characters) for _ in range(length - 4))
+    password += random.choice(lowercase_letters)
+    password += random.choice(uppercase_letters)
+    password += random.choice(digits)
+    password += random.choice(special_characters)
+
+    return password
 
 
 def register(
@@ -100,54 +131,32 @@ def get_user(
     cmd: commands.GetUserCommand,
     uow: unit_of_work.AbstractUnitOfWork,
 ):
+    validate_token(cmd.token, cmd.user_id)
     with uow:
-        if not cmd.token:
-            raise UnathorizedAccess("Authorization token missing")
-
-        try:
-            decoded_token = jwt.decode(cmd.token, secret_key, algorithms=["HS256"])
-            authenticated_user_id = decoded_token.get("user_id")
-
-            if authenticated_user_id != cmd.user_id:
-                raise UnathorizedAccess("Unauthorized access to user account")
-
-            user = uow.users.get(cmd.user_id)
-            return {"username": user.username, "email": user.email}
-        except jwt.InvalidTokenError:
-            raise UnathorizedAccess("Invalid token")
+        user = uow.users.get(cmd.user_id)
+        return {"username": user.username, "email": user.email}
 
 
 def reset_password(
     cmd: commands.ResetPasswordCommand,
     uow: unit_of_work.AbstractUnitOfWork,
 ):
+    new_password = random_valid_password()
+    hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
+
     with uow:
         user = uow.users.get_by_email(email=cmd.email)
         if user is None or user.username != cmd.username:
             raise IncorrectCredentials("Incorrect email or username")
-
-        new_password = random_refs.random_valid_password()
-        user.events.append(events.ResetPassword(user.id, new_password))
-        return new_password
-
-
-def change_user_password(
-    event: events.ResetPassword,
-    uow: unit_of_work.AbstractUnitOfWork,
-):
-    with uow:
-        user = uow.users.get(event.user_id)
-        hashed_password = bcrypt.generate_password_hash(event.new_password).decode(
-            "utf-8"
-        )
         user.password = hashed_password
 
         uow.commit()
 
+    return new_password
+
 
 EVENT_HANDLERS = {
     events.Registered: [create_user_profile],
-    events.ResetPassword: [change_user_password],
 }  # type: Dict[Type[events.Event], List[Callable]]
 
 COMMAND_HANDLERS = {

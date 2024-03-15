@@ -21,15 +21,16 @@ class MessageBus:
 
     def handle(self, message: Message):
         self.queue = [message]
+        # results [list]
         while self.queue:
             message = self.queue.pop(0)
             if isinstance(message, events.Event):
                 self.handle_event(message)
             elif isinstance(message, commands.Command):
-                value = self.handle_command(message)
+                result = self.handle_command(message)
             else:
                 raise Exception(f"{message} was not an Event or Command")
-        return value
+        return result
 
     def handle_event(self, event: events.Event):
         for handler in self.event_handlers[type(event)]:
