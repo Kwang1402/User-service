@@ -1,4 +1,5 @@
 import abc
+from typing import Type
 from user_service.domains import models
 
 
@@ -6,32 +7,22 @@ class AbstractRepository(abc.ABC):
     def __init__(self) -> None:
         self.seen = set()
 
-    def add(self, model: models.User):
+    def add(self, model: Type[models.BaseModel]):
         self._add(model)
         self.seen.add(model)
 
-    def get(self, id) -> models.User:
-        user = self._get(id)
-        if user:
-            self.seen.add(user)
-        return user
-
-    def get_by_email(self, email) -> models.User:
-        user = self._get_by_email(email)
-        if user:
-            self.seen.add(user)
-        return user
+    def get(self, model: Type[models.BaseModel], *args, **kwargs,) -> Type[models.BaseModel]:
+        model = self._get(model,*args,**kwargs)
+        if model:
+            self.seen.add(model)
+        return model
 
     @abc.abstractmethod
-    def _add(self, user: models.User):
+    def _add(self, model: Type[models.BaseModel], *args, **kwargs,):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _get(self, id) -> models.User:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def _get_by_email(self, email) -> models.User:
+    def _get(self, model: Type[models.BaseModel], *args, **kwargs,) -> Type[models.BaseModel]:
         raise NotImplementedError
 
 
@@ -40,11 +31,8 @@ class SqlAlchemyRepository(AbstractRepository):
         super().__init__()
         self.session = session
 
-    def _add(self, user):
-        self.session.add(user)
+    def _add(self, model: Type[models.BaseModel]):
+        self.session.add(model)
 
-    def _get(self, id):
-        return self.session.query(models.User).filter_by(id=id).one_or_none()
-
-    def _get_by_email(self, email):
-        return self.session.query(models.User).filter_by(email=email).one_or_none()
+    def _get(self, model: Type[models.BaseModel], *args, **kwargs,) -> Type[models.BaseModel]:
+        return self.session.query(model).filter_by(**kwargs).one_or_none()

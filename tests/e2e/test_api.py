@@ -51,9 +51,10 @@ def cleanup_user(sqlite_session):
 
     for user_id in users_to_cleanup:
         user = sqlite_session.query(models.User).filter_by(id=user_id).first()
+        profile = sqlite_session.query(models.Profile).filter_by(user_id=user_id).one_or_none()
+        if profile:
+            sqlite_session.delete(profile)
         if user:
-            if user.profile:
-                sqlite_session.delete(user.profile)
             sqlite_session.delete(user)
 
     sqlite_session.commit()
@@ -68,13 +69,13 @@ def test_registered_successfully_returns_201(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
     assert user is not None
     assert user.username == data["username"]
     assert user.email == data["email"]
     assert bcrypt.check_password_hash(user.password, data["password"])
 
-    profile = user.profile
+    profile = sqlite_session.query(models.Profile).filter_by(user_id=user.id).one_or_none()
     assert profile.backup_email == data["backup_email"]
     assert profile.gender == data["gender"]
     assert profile.date_of_birth == data["date_of_birth"]
@@ -94,7 +95,7 @@ def test_registered_invalid_password_returns_400(
     user = (
         sqlite_session.query(models.User)
         .filter_by(email=invalid_password_data["email"])
-        .first()
+        .one_or_none()
     )
     assert user is None
 
@@ -115,7 +116,7 @@ def test_registered_email_already_existed_returns_409(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
     assert user is not None
 
     data2["email"] = data["email"]
@@ -145,7 +146,7 @@ def test_logged_in_successfully_returns_200(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
     assert user is not None
 
     r = client.post(
@@ -183,7 +184,7 @@ def test_logged_in_incorrect_password_returns_401(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
     assert user is not None
 
     r = client.post(
@@ -208,7 +209,7 @@ def test_get_user_successfully_returns_200(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
     assert user is not None
 
     r = client.post(
@@ -238,7 +239,7 @@ def test_get_user_missing_token_returns_401(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
     assert user is not None
 
     r = client.get(f"/user/{user.id}")
@@ -260,7 +261,7 @@ def test_get_user_invalid_token_returns_401(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
     assert user is not None
 
     invalid_token = jwt.encode({"user_id": user.id}, "random_key", algorithm="HS256")
@@ -287,7 +288,7 @@ def test_get_user_unmatching_user_id_returns_401(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
     assert user is not None
 
     r = client.post("/register", json=data2)
@@ -295,7 +296,7 @@ def test_get_user_unmatching_user_id_returns_401(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user2 = sqlite_session.query(models.User).filter_by(email=data2["email"]).first()
+    user2 = sqlite_session.query(models.User).filter_by(email=data2["email"]).one_or_none()
     assert user2 is not None
 
     r = client.post(
@@ -330,7 +331,7 @@ def test_reset_password_successfully_returns_200(
         "/reset-password", json={"email": data["email"], "username": data["username"]}
     )
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
 
     print(r.__dict__)
     assert r.status_code == 200
@@ -361,7 +362,7 @@ def test_reset_password_incorrect_username_returns_400(
     assert r.status_code == 201
     assert r.json["message"] == "User successfully registered"
 
-    user = sqlite_session.query(models.User).filter_by(email=data["email"]).first()
+    user = sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
     assert user is not None
 
     r = client.post(

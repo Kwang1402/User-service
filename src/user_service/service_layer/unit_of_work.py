@@ -9,7 +9,7 @@ from user_service.adapters import repository
 
 
 class AbstractUnitOfWork(abc.ABC):
-    users: repository.AbstractRepository
+    repo: repository.AbstractRepository
 
     def __enter__(self) -> AbstractUnitOfWork:
         return self
@@ -21,9 +21,9 @@ class AbstractUnitOfWork(abc.ABC):
         self._commit()
 
     def collect_new_events(self):
-        for user in self.users.seen:
-            while user.events:
-                yield user.events.pop(0)
+        for model in self.repo.seen:
+            while model.events:
+                yield model.events.pop(0)
 
     @abc.abstractmethod
     def _commit(self):
@@ -47,7 +47,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
     def __enter__(self):
         self.session = self.session_factory()
-        self.users = repository.SqlAlchemyRepository(self.session)
+        self.repo = repository.SqlAlchemyRepository(self.session)
         return super().__enter__()
 
     def __exit__(self, *args):

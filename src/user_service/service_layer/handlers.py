@@ -81,17 +81,18 @@ def register(
     cmd: commands.RegisterCommand,
     uow: unit_of_work.AbstractUnitOfWork,
 ):
+    if validate_password(cmd.password) is False:
+        raise InvalidPassword(f"Invalid password '{cmd.password}'")
+    
     with uow:
-        if validate_password(cmd.password) is False:
-            raise InvalidPassword(f"Invalid password '{cmd.password}'")
-        user = uow.users.get_by_email(email=cmd.email)
+        user = uow.repo.get(models.User,email=cmd.email)
         if user:
             raise EmailExisted(f"Email {cmd.email} already existed")
 
         hashed_password = bcrypt.generate_password_hash(cmd.password).decode("utf-8")
 
         user = models.User(cmd.username, cmd.email, hashed_password)
-        uow.users.add(user)
+        uow.repo.add(user)
         user.events.append(
             events.Registered(user.id, cmd.backup_email, cmd.gender, cmd.date_of_birth)
         )
@@ -107,8 +108,7 @@ def create_user_profile(
         profile = models.Profile(
             event.user_id, event.backup_email, event.gender, event.date_of_birth
         )
-        user = uow.users.get(id=event.user_id)
-        user.profile = profile
+        uow.repo.add(profile)
 
         uow.commit()
 
@@ -118,7 +118,7 @@ def login(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
-        user = uow.users.get_by_email(email=cmd.email)
+        user = uow.repo.get(models.User, email=cmd.email)
         if user is None or not bcrypt.check_password_hash(user.password, cmd.password):
             raise IncorrectCredentials("Incorrect email or password")
 
@@ -133,7 +133,7 @@ def get_user(
 ):
     validate_token(cmd.token, cmd.user_id)
     with uow:
-        user = uow.users.get(cmd.user_id)
+        user = uow.repo.get(models.User, id=cmd.user_id)
         return {"username": user.username, "email": user.email}
 
 
@@ -145,7 +145,7 @@ def reset_password(
     hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
 
     with uow:
-        user = uow.users.get_by_email(email=cmd.email)
+        user = uow.repo.get(models.User ,email=cmd.email)
         if user is None or user.username != cmd.username:
             raise IncorrectCredentials("Incorrect email or username")
         user.password = hashed_password
