@@ -18,14 +18,12 @@ class User(BaseModel):
         username: str,
         email: str,
         password: str,
-        profile: Profile = None,
         locked: bool = False,
     ):
         super().__init__()
         self.username = username
         self.email = email
         self.password = password
-        self.profile = profile
         self.locked = locked
         self.events = []
 
@@ -54,3 +52,4 @@ class Profile(BaseModel):
         self.backup_email = backup_email
         self.gender = gender
         self.date_of_birth = date_of_birth
+        self.events = []
