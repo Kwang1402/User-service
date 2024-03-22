@@ -10,7 +10,43 @@ from tenacity import retry, stop_after_delay
 from src.user_service.adapters.orm import start_mappers, metadata
 from src.user_service import config
 from src.user_service.entrypoints.app import create_app
-from src.user_service.domains import models
+from tests import random_refs
+
+
+@pytest.fixture
+def data():
+    yield {
+        "username": random_refs.random_username(),
+        "email": random_refs.random_email(),
+        "password": random_refs.random_valid_password(),
+        "backup_email": None,
+        "gender": None,
+        "date_of_birth": None,
+    }
+
+
+@pytest.fixture
+def invalid_password_data():
+    yield {
+        "username": random_refs.random_username(),
+        "email": random_refs.random_email(),
+        "password": random_refs.random_invalid_password(),
+        "backup_email": None,
+        "gender": None,
+        "date_of_birth": None,
+    }
+
+
+@pytest.fixture
+def data2():
+    yield {
+        "username": random_refs.random_username(),
+        "email": random_refs.random_email(),
+        "password": random_refs.random_valid_password(),
+        "backup_email": None,
+        "gender": None,
+        "date_of_birth": None,
+    }
 
 
 @pytest.fixture()

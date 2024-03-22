@@ -82,10 +82,10 @@ def register(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     if validate_password(cmd.password) is False:
-        raise InvalidPassword(f"Invalid password '{cmd.password}'")
-    
+        raise InvalidPassword("Invalid password")
+
     with uow:
-        user = uow.repo.get(models.User,email=cmd.email)
+        user = uow.repo.get(models.User, email=cmd.email)
         if user:
             raise EmailExisted(f"Email {cmd.email} already existed")
 
@@ -145,7 +145,7 @@ def reset_password(
     hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
 
     with uow:
-        user = uow.repo.get(models.User ,email=cmd.email)
+        user = uow.repo.get(models.User, email=cmd.email)
         if user is None or user.username != cmd.username:
             raise IncorrectCredentials("Incorrect email or username")
         user.password = hashed_password
