@@ -13,7 +13,7 @@ class AbstractRepository(abc.ABC):
 
     def get(
         self,
-        model: Type[models.BaseModel],
+        model: models.BaseModel,
         *args,
         **kwargs,
     ) -> Type[models.BaseModel]:
@@ -25,7 +25,7 @@ class AbstractRepository(abc.ABC):
     @abc.abstractmethod
     def _add(
         self,
-        model: Type[models.BaseModel],
+        model: models.BaseModel,
         *args,
         **kwargs,
     ):
@@ -46,7 +46,7 @@ class SqlAlchemyRepository(AbstractRepository):
         super().__init__()
         self.session = session
 
-    def _add(self, model: Type[models.BaseModel]):
+    def _add(self, model: models.BaseModel):
         self.session.add(model)
 
     def _get(

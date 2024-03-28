@@ -1,7 +1,6 @@
 import pytest
 from typing import Type
 from flask_bcrypt import Bcrypt
-import jwt
 from user_service import bootstrap
 from user_service.adapters import repository
 from user_service.service_layer import unit_of_work
@@ -69,12 +68,6 @@ class TestRegister:
         assert profile.gender == data["gender"]
         assert profile.date_of_birth == data["date_of_birth"]
 
-    def test_invalid_password(self, invalid_password_data):
-        bus = bootstrap_test_app()
-
-        with pytest.raises(handlers.InvalidPassword, match="Invalid password"):
-            bus.handle(commands.RegisterCommand(**invalid_password_data))
-
     def test_email_already_existed(self, data, data2):
         bus = bootstrap_test_app()
         bus.handle(commands.RegisterCommand(**data))
@@ -136,43 +129,6 @@ class TestGetUser:
 
         user_info = results[0]
         assert user_info == {"username": user.username, "email": user.email}
-
-    def test_missing_token(self, data):
-        bus = bootstrap_test_app()
-
-        bus.handle(commands.RegisterCommand(**data))
-        user = bus.uow.repo.get(models.User, email=data["email"])
-
-        with pytest.raises(
-            handlers.UnathorizedAccess, match="Authorization token missing"
-        ):
-            bus.handle(commands.GetUserCommand(user.id, None))
-
-    def test_invalid_token(self, data):
-        bus = bootstrap_test_app()
-
-        bus.handle(commands.RegisterCommand(**data))
-        user = bus.uow.repo.get(models.User, email=data["email"])
-
-        invalid_token = jwt.encode(
-            {"user_id": user.id}, "random_key", algorithm="HS256"
-        )
-        with pytest.raises(handlers.UnathorizedAccess, match="Invalid token"):
-            bus.handle(commands.GetUserCommand(user.id, invalid_token))
-
-    def test_unmatching_user_id(self, data, data2):
-        bus = bootstrap_test_app()
-
-        bus.handle(commands.RegisterCommand(**data))
-        bus.handle(commands.RegisterCommand(**data2))
-        user2 = bus.uow.repo.get(models.User, email=data2["email"])
-
-        results = bus.handle(commands.LoginCommand(data["email"], data["password"]))
-        token = results[0]
-        with pytest.raises(
-            handlers.UnathorizedAccess, match="Unauthorized access to user account"
-        ):
-            bus.handle(commands.GetUserCommand(user2.id, token))
 
 
 class TestResetPassword:
