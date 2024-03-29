@@ -1,13 +1,6 @@
 from typing import List, Dict, Callable, Type
 from user_service.domains import commands, events, models
 from user_service.service_layer import unit_of_work
-from user_service.config import SECRET_KEY
-import jwt
-from flask_bcrypt import Bcrypt
-import string
-import random
-
-bcrypt = Bcrypt()
 
 
 class EmailExisted(Exception):
@@ -16,22 +9,6 @@ class EmailExisted(Exception):
 
 class IncorrectCredentials(Exception):
     pass
-
-
-def random_valid_password(length=12):
-    lowercase_letters = string.ascii_lowercase
-    uppercase_letters = string.ascii_uppercase
-    digits = string.digits
-    special_characters = string.punctuation
-    all_characters = lowercase_letters + uppercase_letters + digits + special_characters
-
-    password = "".join(random.choice(all_characters) for _ in range(length - 4))
-    password += random.choice(lowercase_letters)
-    password += random.choice(uppercase_letters)
-    password += random.choice(digits)
-    password += random.choice(special_characters)
-
-    return password
 
 
 def register(
@@ -43,9 +20,7 @@ def register(
         if user:
             raise EmailExisted(f"Email {cmd.email} already existed")
 
-        hashed_password = bcrypt.generate_password_hash(cmd.password).decode("utf-8")
-
-        user = models.User(cmd.username, cmd.email, hashed_password)
+        user = models.User(cmd.username, cmd.email, cmd.password)
         uow.repo.add(user)
         user.events.append(
             events.Registered(user.id, cmd.backup_email, cmd.gender, cmd.date_of_birth)
@@ -73,10 +48,10 @@ def login(
 ):
     with uow:
         user = uow.repo.get(models.User, email=cmd.email)
-        if user is None or not bcrypt.check_password_hash(user.password, cmd.password):
+        if user is None or not user.check_password(cmd.password):
             raise IncorrectCredentials("Incorrect email or password")
 
-        token = jwt.encode({"user_id": user.id}, SECRET_KEY, algorithm="HS256")
+        token = user.generate_token()
 
         return token
 
@@ -98,9 +73,7 @@ def reset_password(
         user = uow.repo.get(models.User, email=cmd.email)
         if user is None or user.username != cmd.username:
             raise IncorrectCredentials("Incorrect email or username")
-        new_password = random_valid_password()
-        hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
-        user.password = hashed_password
+        new_password = user.reset_password()
 
         uow.commit()
 
