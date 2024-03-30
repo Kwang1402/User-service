@@ -53,7 +53,7 @@ def login(
 
         token = user.generate_token()
 
-        return token
+        return user.id, token
 
 
 def get_user(

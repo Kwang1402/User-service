@@ -125,7 +125,6 @@ def test_get_user_successfully_returns_200(
     client,
     data,
     cleanup_user,
-    sqlite_session,
 ):
     r = client.post("/register", json=data)
 
@@ -133,15 +132,12 @@ def test_get_user_successfully_returns_200(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
 
-    user = (
-        sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
-    )
-
+    user_id = r.json["user_id"]
     token = r.json["token"]
-    r = client.get(f"/user/{user.id}", headers={"Authorization": f"Bearer {token}"})
+    r = client.get(f"/user/{user_id}", headers={"Authorization": f"Bearer {token}"})
     print(r.__dict__)
     assert r.status_code == 200
-    assert r.json["user"] == {"username": user.username, "email": user.email}
+    assert r.json["user"] == {"username": data["username"], "email": data["email"]}
     cleanup_user.append(data["email"])
 
 
@@ -150,15 +146,16 @@ def test_get_user_missing_token_returns_401(
     client,
     data,
     cleanup_user,
-    sqlite_session,
 ):
     r = client.post("/register", json=data)
 
-    user = (
-        sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
+    r = client.post(
+        "/login", json={"email": data["email"], "password": data["password"]}
     )
 
-    r = client.get(f"/user/{user.id}")
+    user_id = r.json["user_id"]
+
+    r = client.get(f"/user/{user_id}")
     print(r.__dict__)
     assert r.status_code == 401
     assert r.json["error"] == "Authorization token missing"
@@ -170,18 +167,19 @@ def test_get_user_invalid_token_returns_401(
     client,
     data,
     cleanup_user,
-    sqlite_session,
 ):
     r = client.post("/register", json=data)
 
-    user = (
-        sqlite_session.query(models.User).filter_by(email=data["email"]).one_or_none()
+    r = client.post(
+        "/login", json={"email": data["email"], "password": data["password"]}
     )
 
-    invalid_token = jwt.encode({"user_id": user.id}, "random_key", algorithm="HS256")
+    user_id = r.json["user_id"]
+
+    invalid_token = jwt.encode({"user_id": user_id}, "random_key", algorithm="HS256")
 
     r = client.get(
-        f"/user/{user.id}", headers={"Authorization": f"Bearer {invalid_token}"}
+        f"/user/{user_id}", headers={"Authorization": f"Bearer {invalid_token}"}
     )
     print(r.__dict__)
     assert r.status_code == 401
@@ -195,22 +193,24 @@ def test_get_user_unmatching_user_id_returns_401(
     data,
     data2,
     cleanup_user,
-    sqlite_session,
 ):
     r = client.post("/register", json=data)
 
     r = client.post("/register", json=data2)
-
-    user2 = (
-        sqlite_session.query(models.User).filter_by(email=data2["email"]).one_or_none()
-    )
 
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
 
     token = r.json["token"]
-    r = client.get(f"/user/{user2.id}", headers={"Authorization": f"Bearer {token}"})
+
+    r = client.post(
+        "/login", json={"email": data2["email"], "password": data2["password"]}
+    )
+
+    user2_id = r.json["user_id"]
+
+    r = client.get(f"/user/{user2_id}", headers={"Authorization": f"Bearer {token}"})
     print(r.__dict__)
     assert r.status_code == 401
     assert r.json["error"] == "Unauthorized access to user account"

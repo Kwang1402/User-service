@@ -82,12 +82,12 @@ def login():
         body = request.json
         cmd = commands.LoginCommand(**body)
         results = bus.handle(cmd)
-        token = results[0]
+        user_id, token = results[0]
 
     except IncorrectCredentials as e:
         return jsonify({"error": str(e)}), 401
 
-    return jsonify({"token": token}), 200
+    return jsonify({"user_id": user_id, "token": token}), 200
 
 
 @bp.route("/user/<string:user_id>", methods=["GET"])

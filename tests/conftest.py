@@ -114,11 +114,8 @@ def sqlite_session_factory(sqlite_db):
 
 
 @pytest.fixture
-def sqlite_session(sqlite_db):
-    # return sqlite_session_factory()
-    clear_mappers()
-    start_mappers()
-    yield sessionmaker(bind=sqlite_db)()
+def sqlite_session(sqlite_session_factory):
+    return sqlite_session_factory()
 
 
 @pytest.fixture

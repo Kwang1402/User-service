@@ -44,6 +44,9 @@ class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
     def rollback(self):
         pass
 
+    def close(self):
+        pass
+
 
 def bootstrap_test_app():
     return bootstrap.bootstrap(
@@ -122,10 +125,10 @@ class TestGetUser:
 
         bus.handle(commands.RegisterCommand(**data))
         results = bus.handle(commands.LoginCommand(data["email"], data["password"]))
-        token = results[0]
+        user_id, token = results[0]
         user = bus.uow.repo.get(models.User, email=data["email"])
 
-        results = bus.handle(commands.GetUserCommand(user.id, token))
+        results = bus.handle(commands.GetUserCommand(user_id, token))
 
         user_info = results[0]
         assert user_info == {"username": user.username, "email": user.email}
