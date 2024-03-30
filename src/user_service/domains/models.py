@@ -10,6 +10,7 @@ from user_service.config import SECRET_KEY
 
 bcrypt = Bcrypt()
 
+
 def random_valid_password(length=12):
     lowercase_letters = string.ascii_lowercase
     uppercase_letters = string.ascii_uppercase
@@ -24,6 +25,7 @@ def random_valid_password(length=12):
     password += random.choice(special_characters)
 
     return password
+
 
 @dataclasses.dataclass
 class BaseModel:
@@ -60,10 +62,10 @@ class User(BaseModel):
 
     def __hash__(self):
         return hash(self.id)
-    
+
     def check_password(self, password) -> bool:
         return bcrypt.check_password_hash(self.password, password)
-    
+
     def generate_token(self):
         return jwt.encode({"user_id": self.id}, SECRET_KEY, algorithm="HS256")
 

@@ -16,6 +16,7 @@ class AbstractUnitOfWork(abc.ABC):
 
     def __exit__(self, *args):
         self.rollback()
+        self.close()
 
     def commit(self):
         self._commit()
@@ -31,6 +32,10 @@ class AbstractUnitOfWork(abc.ABC):
 
     @abc.abstractmethod
     def rollback(self):
+        raise NotImplementedError
+
+    @abc.abstractclassmethod
+    def close(self):
         raise NotImplementedError
 
 
@@ -50,12 +55,11 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.repo = repository.SqlAlchemyRepository(self.session)
         return super().__enter__()
 
-    def __exit__(self, *args):
-        super().__exit__(*args)
-        self.session.close()
-
     def _commit(self):
         self.session.commit()
 
     def rollback(self):
         self.session.rollback()
+
+    def close(self):
+        self.session.close()
