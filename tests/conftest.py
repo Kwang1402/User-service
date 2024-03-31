@@ -10,7 +10,43 @@ from tenacity import retry, stop_after_delay
 from src.user_service.adapters.orm import start_mappers, metadata
 from src.user_service import config
 from src.user_service.entrypoints.app import create_app
-from src.user_service.domains import models
+from tests import random_refs
+
+
+@pytest.fixture
+def data():
+    yield {
+        "username": random_refs.random_username(),
+        "email": random_refs.random_email(),
+        "password": random_refs.random_valid_password(),
+        "backup_email": None,
+        "gender": None,
+        "date_of_birth": None,
+    }
+
+
+@pytest.fixture
+def invalid_password_data():
+    yield {
+        "username": random_refs.random_username(),
+        "email": random_refs.random_email(),
+        "password": random_refs.random_invalid_password(),
+        "backup_email": None,
+        "gender": None,
+        "date_of_birth": None,
+    }
+
+
+@pytest.fixture
+def data2():
+    yield {
+        "username": random_refs.random_username(),
+        "email": random_refs.random_email(),
+        "password": random_refs.random_valid_password(),
+        "backup_email": None,
+        "gender": None,
+        "date_of_birth": None,
+    }
 
 
 @pytest.fixture()
@@ -78,11 +114,8 @@ def sqlite_session_factory(sqlite_db):
 
 
 @pytest.fixture
-def sqlite_session(sqlite_db):
-    # return sqlite_session_factory()
-    clear_mappers()
-    start_mappers()
-    yield sessionmaker(bind=sqlite_db)()
+def sqlite_session(sqlite_session_factory):
+    return sqlite_session_factory()
 
 
 @pytest.fixture
