@@ -47,10 +47,10 @@ class MessageBus:
         logger.debug("Handling command %s", command)
         try:
             handler = self.command_handlers[type(command)]
-            value = handler(command)
+            result = handler(command)
             self.queue.extend(self.uow.collect_new_events())
-            if value:
-                return value
+            if result:
+                return result
         except Exception:
             logger.exception("Exception handling command %s", command)
             raise
