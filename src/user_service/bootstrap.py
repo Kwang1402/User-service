@@ -3,16 +3,17 @@ from user_service.adapters import orm
 from user_service.service_layer import handlers, message_bus, unit_of_work
 import typing as t
 
+
 def bootstrap(
     start_orm: bool = True,
-    uow: t.Type[unit_of_work.AbstractUnitOfWork] = unit_of_work.SqlAlchemyUnitOfWork
+    uow: t.Type[unit_of_work.AbstractUnitOfWork] = unit_of_work.SqlAlchemyUnitOfWork,
 ) -> message_bus.MessageBus:
     if start_orm:
         orm.start_mappers()
 
     if isinstance(uow, type):
         uow = uow()
-        
+
     dependencies = {"uow": uow}
     injected_event_handlers = {
         event_type: [
