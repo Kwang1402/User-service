@@ -3,6 +3,8 @@ from tests import random_refs
 from user_service.domains import models
 from flask_bcrypt import Bcrypt
 import jwt
+import pyotp
+import time
 
 bcrypt = Bcrypt()
 
@@ -71,6 +73,93 @@ def test_registered_email_already_existed_returns_409(
 
     cleanup_user.append(data["email"])
 
+@pytest.mark.usefixtures("sqlite_db")
+def test_enable_two_factor_auth_successfully_returns_200(
+    client,
+    data,
+    cleanup_user,
+):
+    r = client.post("/register", json=data)
+
+    r = client.post("/enable-2fa", json={"email": data["email"]})
+    print(r.__dict__)
+    assert r.status_code == 200
+    assert r.json["otp_code"] is not None
+    cleanup_user.append(data["email"])
+
+@pytest.mark.usefixtures("sqlite_db")
+def test_enable_two_factor_auth_email_does_not_exist_returns_400(
+    client,
+    data,
+):
+    r = client.post("/enable-2fa", json={"email": data["email"]})
+    print(r.__dict__)
+    assert r.status_code == 400
+    assert r.json["error"] == "Email does not exist"
+
+@pytest.mark.usefixtures("sqlite_db")
+def test_verify_enable_two_factor_auth_successfully_returns_200(
+    client,
+    data,
+    cleanup_user,
+):
+    r = client.post("/register", json=data)
+
+    r = client.post("/enable-2fa", json={"email": data["email"]})
+    
+    otp_code = r.json["otp_code"]
+    r = client.post("/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code})
+    print(r.__dict__)
+    assert r.status_code == 200
+    assert r.json["message"] == "Two-Factor Authentication successfully enabled"
+
+    cleanup_user.append(data["email"])
+
+@pytest.mark.usefixtures("sqlite_db")
+def test_verify_enable_two_factor_auth_email_does_not_exist_returns_400(
+    client,
+    data,
+):
+    otp_code = pyotp.TOTP(pyotp.random_base32()).now()
+    r = client.post("/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code})
+    print(r.__dict__)
+    assert r.status_code == 400
+    assert r.json["error"] == "Email does not exist"
+
+@pytest.mark.usefixtures("sqlite_db")
+def test_verify_enable_two_factor_auth_incorrect_code_returns_400(
+    client,
+    data,
+    cleanup_user,
+):
+    r = client.post("/register", json=data)
+    
+    otp_code = pyotp.TOTP(pyotp.random_base32()).now()
+    r = client.post("/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code})
+    print(r.__dict__)
+    assert r.status_code == 400
+    assert r.json["error"] == "Invalid OTP code"
+
+    cleanup_user.append(data["email"])
+
+@pytest.mark.usefixtures("sqlite_db")
+def test_verify_enable_two_factor_auth_expired_code_returns_400(
+    client,
+    data,
+    cleanup_user,
+):
+    r = client.post("/register", json=data)
+
+    r = client.post("/enable-2fa", json={"email": data["email"]})
+    
+    otp_code = r.json["otp_code"]
+    time.sleep(30)
+    r = client.post("/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code})
+    print(r.__dict__)
+    assert r.status_code == 400
+    assert r.json["error"] == "Invalid OTP code"
+
+    cleanup_user.append(data["email"])
 
 @pytest.mark.usefixtures("sqlite_db")
 def test_logged_in_successfully_returns_200(
@@ -79,6 +168,11 @@ def test_logged_in_successfully_returns_200(
     cleanup_user,
 ):
     r = client.post("/register", json=data)
+
+    r = client.post("/enable-2fa", json={"email": data["email"]})
+
+    otp_code = r.json["otp_code"]
+    r = client.post("/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code})
 
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
@@ -128,6 +222,11 @@ def test_get_user_successfully_returns_200(
 ):
     r = client.post("/register", json=data)
 
+    r = client.post("/enable-2fa", json={"email": data["email"]})
+
+    otp_code = r.json["otp_code"]
+    r = client.post("/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code})
+
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
@@ -149,6 +248,11 @@ def test_get_user_missing_token_returns_401(
 ):
     r = client.post("/register", json=data)
 
+    r = client.post("/enable-2fa", json={"email": data["email"]})
+
+    otp_code = r.json["otp_code"]
+    r = client.post("/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code})
+
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
@@ -169,6 +273,11 @@ def test_get_user_invalid_token_returns_401(
     cleanup_user,
 ):
     r = client.post("/register", json=data)
+
+    r = client.post("/enable-2fa", json={"email": data["email"]})
+
+    otp_code = r.json["otp_code"]
+    r = client.post("/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code})
 
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
@@ -195,8 +304,14 @@ def test_get_user_unmatching_user_id_returns_401(
     cleanup_user,
 ):
     r = client.post("/register", json=data)
+    r = client.post("/enable-2fa", json={"email": data["email"]})
+    otp_code = r.json["otp_code"]
+    r = client.post("/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code})
 
     r = client.post("/register", json=data2)
+    r = client.post("/enable-2fa", json={"email": data2["email"]})
+    otp_code = r.json["otp_code"]
+    r = client.post("/verify-enable-2fa", json={"email": data2["email"], "otp_code": otp_code})
 
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}

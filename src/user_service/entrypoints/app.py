@@ -7,6 +7,8 @@ from user_service.domains import commands
 from user_service.service_layer.handlers import (
     EmailExisted,
     IncorrectCredentials,
+    TwoFactorAuthNotEnabled,
+    InvalidOTP,
 )
 from user_service.config import SECRET_KEY
 
@@ -76,6 +78,33 @@ def register():
     return jsonify({"message": "User successfully registered"}), 201
 
 
+@bp.route("/enable-2fa", methods=["POST"])
+def enable_two_factor_auth():
+    try:
+        body = request.json
+        cmd = commands.EnableTwoFactorAuthCommand(**body)
+        results = bus.handle(cmd)
+        otp_code = results[0]
+
+    except IncorrectCredentials as e:
+        return jsonify({"error": str(e)}), 400
+
+    return jsonify({"otp_code": otp_code}), 200
+
+
+@bp.route("/verify-enable-2fa", methods=["POST"])
+def verify_enable_two_factor_auth():
+    try:
+        body = request.json
+        cmd = commands.VerifyEnableTwoFactorAuthCommand(**body)
+        bus.handle(cmd)
+
+    except (IncorrectCredentials, InvalidOTP) as e:
+        return jsonify({"error": str(e)}), 400
+
+    return jsonify({"message": "Two-Factor Authentication successfully enabled"}), 200
+
+
 @bp.route("/login", methods=["POST"])
 def login():
     try:
@@ -84,7 +113,7 @@ def login():
         results = bus.handle(cmd)
         user_id, token = results[0]
 
-    except IncorrectCredentials as e:
+    except (IncorrectCredentials, TwoFactorAuthNotEnabled) as e:
         return jsonify({"error": str(e)}), 401
 
     return jsonify({"user_id": user_id, "token": token}), 200

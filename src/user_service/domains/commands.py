@@ -17,6 +17,17 @@ class RegisterCommand(Command):
 
 
 @dataclasses.dataclass
+class EnableTwoFactorAuthCommand(Command):
+    email: str
+
+
+@dataclasses.dataclass
+class VerifyEnableTwoFactorAuthCommand(Command):
+    email: str
+    otp_code: str
+
+
+@dataclasses.dataclass
 class LoginCommand(Command):
     email: str
     password: str

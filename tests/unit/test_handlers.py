@@ -2,6 +2,8 @@ import pytest
 from typing import Type
 from flask_bcrypt import Bcrypt
 from user_service import bootstrap
+import pyotp
+import time
 from user_service.adapters import repository
 from user_service.service_layer import unit_of_work
 from user_service.domains import models, commands
@@ -81,12 +83,93 @@ class TestRegister:
         ):
             bus.handle(commands.RegisterCommand(**data2))
 
+class TestEnableAndVerify2FA:
+    def test_enable_and_verify_2fa(self, data):
+        bus = bootstrap_test_app()
+        bus.handle(commands.RegisterCommand(**data))
+
+        results = bus.handle(commands.EnableTwoFactorAuthCommand(data["email"]))
+        otp_code = results[0]
+        assert otp_code is not None
+        
+        bus.handle(commands.VerifyEnableTwoFactorAuthCommand(data["email"], otp_code))
+        user = bus.uow.repo.get(models.User, email=data["email"])
+
+        assert user.two_factor_auth_enabled == True
+    
+    def test_enable_2fa_email_does_not_exist(self, data):
+        bus = bootstrap_test_app()
+        with pytest.raises(
+            handlers.IncorrectCredentials, match="Email does not exist"
+        ):
+            bus.handle(
+                commands.EnableTwoFactorAuthCommand(
+                    data["email"]
+                )
+            )
+
+    def test_verify_2fa_email_does_not_exist(self, data):
+        bus = bootstrap_test_app()
+        
+        otp_code = pyotp.TOTP(pyotp.random_base32()).now()
+        with pytest.raises(
+            handlers.IncorrectCredentials, match="Email does not exist"
+        ):
+            bus.handle(
+                commands.VerifyEnableTwoFactorAuthCommand(
+                    data["email"], otp_code
+                )
+            )
+    
+    def test_verify_2fa_incorrect_code(self, data):
+        bus = bootstrap_test_app()
+        bus.handle(commands.RegisterCommand(**data))
+
+        otp_code = pyotp.TOTP(pyotp.random_base32()).now()
+        with pytest.raises(
+            handlers.InvalidOTP, match="Invalid OTP code"
+        ):
+            bus.handle(
+                commands.VerifyEnableTwoFactorAuthCommand(
+                    data["email"], otp_code
+                )
+            )
+        
+        user = bus.uow.repo.get(models.User, email=data["email"])
+
+        assert user.two_factor_auth_enabled == False
+    
+    def test_verify_2fa_expired_code(self, data):
+        bus = bootstrap_test_app()
+        bus.handle(commands.RegisterCommand(**data))
+
+        results = bus.handle(commands.EnableTwoFactorAuthCommand(data["email"]))
+        otp_code = results[0]
+        
+        time.sleep(30)
+        with pytest.raises(
+            handlers.InvalidOTP, match="Invalid OTP code"
+        ):
+            bus.handle(
+                commands.VerifyEnableTwoFactorAuthCommand(
+                    data["email"], otp_code
+                )
+            )
+        
+        user = bus.uow.repo.get(models.User, email=data["email"])
+
+        assert user.two_factor_auth_enabled == False
 
 class TestLogin:
     def test_login(self, data):
         bus = bootstrap_test_app()
-
         bus.handle(commands.RegisterCommand(**data))
+        
+        results = bus.handle(commands.EnableTwoFactorAuthCommand(data["email"]))
+        otp_code = results[0]
+        
+        bus.handle(commands.VerifyEnableTwoFactorAuthCommand(data["email"], otp_code))
+        
         results = bus.handle(commands.LoginCommand(data["email"], data["password"]))
 
         token = results[0]
@@ -124,6 +207,11 @@ class TestGetUser:
         bus = bootstrap_test_app()
 
         bus.handle(commands.RegisterCommand(**data))
+        results = bus.handle(commands.EnableTwoFactorAuthCommand(data["email"]))
+        otp_code = results[0]
+        
+        bus.handle(commands.VerifyEnableTwoFactorAuthCommand(data["email"], otp_code))
+        
         results = bus.handle(commands.LoginCommand(data["email"], data["password"]))
         user_id, token = results[0]
         user = bus.uow.repo.get(models.User, email=data["email"])

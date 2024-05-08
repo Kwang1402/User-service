@@ -7,17 +7,17 @@ class AbstractRepository(abc.ABC):
     def __init__(self) -> None:
         self.seen = set()
 
-    def add(self, model: Type[models.BaseModel]):
+    def add(self, model: models.BaseModel):
         self._add(model)
         self.seen.add(model)
 
     def get(
         self,
-        model: models.BaseModel,
+        model_type: Type[models.BaseModel],
         *args,
         **kwargs,
-    ) -> Type[models.BaseModel]:
-        model = self._get(model, *args, **kwargs)
+    ) -> models.BaseModel:
+        model = self._get(model_type, *args, **kwargs)
         if model:
             self.seen.add(model)
         return model
@@ -34,10 +34,10 @@ class AbstractRepository(abc.ABC):
     @abc.abstractmethod
     def _get(
         self,
-        model: Type[models.BaseModel],
+        model_type: Type[models.BaseModel],
         *args,
         **kwargs,
-    ) -> Type[models.BaseModel]:
+    ) -> models.BaseModel:
         raise NotImplementedError
 
 
@@ -51,8 +51,8 @@ class SqlAlchemyRepository(AbstractRepository):
 
     def _get(
         self,
-        model: Type[models.BaseModel],
+        model_type: Type[models.BaseModel],
         *args,
         **kwargs,
-    ) -> Type[models.BaseModel]:
-        return self.session.query(model).filter_by(**kwargs).one_or_none()
+    ) -> models.BaseModel:
+        return self.session.query(model_type).filter_by(**kwargs).one_or_none()
