@@ -34,7 +34,7 @@ class AbstractUnitOfWork(abc.ABC):
     def rollback(self):
         raise NotImplementedError
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def close(self):
         raise NotImplementedError
 
