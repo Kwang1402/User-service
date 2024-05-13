@@ -9,7 +9,7 @@ from tenacity import retry, stop_after_delay
 
 from src.user_service.adapters.orm import start_mappers, metadata
 from src.user_service import config
-from src.user_service.entrypoints.app import create_app
+from user_service.entrypoints.flask_app import create_app
 from tests import random_refs
 
 
