@@ -1,8 +1,9 @@
 from fastapi import FastAPI
-from user_service import bootstrap
-from .routers import user
+from .routers import register, login, user, reset_password
 
 app = FastAPI()
-bus = bootstrap.bootstrap()
 
-app.include_router(user.router, prefix="/user")
+app.include_router(register.router)
+app.include_router(login.router)
+app.include_router(user.router)
+app.include_router(reset_password.router)

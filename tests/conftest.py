@@ -6,10 +6,11 @@ import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, clear_mappers
 from tenacity import retry, stop_after_delay
+from fastapi.testclient import TestClient
 
 from src.user_service.adapters.orm import start_mappers, metadata
 from src.user_service import config
-from user_service.entrypoints.flask_app import create_app
+from user_service.entrypoints.fastapi_app import app
 from tests import random_refs
 
 
@@ -50,25 +51,8 @@ def data2():
 
 
 @pytest.fixture()
-def app():
-    app = create_app()
-    app.config.update(
-        {
-            "TESTING": True,
-        }
-    )
-
-    yield app
-
-
-@pytest.fixture()
-def client(app):
-    return app.test_client()
-
-
-@pytest.fixture()
-def runner(app):
-    return app.test_cli_runner()
+def client():
+    return TestClient(app)
 
 
 @pytest.fixture

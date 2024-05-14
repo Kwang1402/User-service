@@ -27,6 +27,7 @@ class TwoFactorAuthNotEnabled(Exception):
 class InvalidOTP(Exception):
     pass
 
+
 def random_valid_password(length=12):
     lowercase_letters = string.ascii_lowercase
     uppercase_letters = string.ascii_uppercase
@@ -41,6 +42,7 @@ def random_valid_password(length=12):
     password += random.choice(special_characters)
 
     return password
+
 
 def register(
     cmd: commands.RegisterCommand,
@@ -81,10 +83,7 @@ def enable_two_factor_auth(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
-        user = uow.repo.get(models.User, email=cmd.email)
-        if user is None:
-            raise IncorrectCredentials("Email does not exist")
-
+        user = uow.repo.get(models.User, id=cmd.user_id)
         otp_code = pyotp.TOTP(user.secret_token).now()
         return otp_code
 
@@ -94,9 +93,7 @@ def verify_enable_two_factor_auth(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
-        user = uow.repo.get(models.User, email=cmd.email)
-        if user is None:
-            raise IncorrectCredentials("Email does not exist")
+        user = uow.repo.get(models.User, id=cmd.user_id)
 
         if not pyotp.TOTP(user.secret_token).verify(cmd.otp_code):
             raise InvalidOTP("Invalid OTP code")
@@ -143,7 +140,9 @@ def reset_password(
         if user is None or user.username != cmd.username:
             raise IncorrectCredentials("Incorrect email or username")
         new_password = random_valid_password()
-        new_hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
+        new_hashed_password = bcrypt.generate_password_hash(new_password).decode(
+            "utf-8"
+        )
         user.change_password(new_hashed_password)
 
         uow.commit()

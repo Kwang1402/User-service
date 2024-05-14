@@ -1,12 +1,18 @@
 import string
 import jwt
 from user_service.config import SECRET_KEY
+from user_service import bootstrap
+
+bus = bootstrap.bootstrap()
+
 
 class InvalidPassword(Exception):
     pass
 
+
 class UnauthorizedAccess(Exception):
     pass
+
 
 def validate_password(password: str):
     # Minimum length
@@ -26,6 +32,7 @@ def validate_password(password: str):
         raise InvalidPassword("Invalid password")
 
     return True
+
 
 async def validate_token(token, user_id):
     if not token:
