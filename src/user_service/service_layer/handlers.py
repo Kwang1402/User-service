@@ -113,9 +113,7 @@ def login(
             raise IncorrectCredentials("Incorrect email or password")
 
         if not user.two_factor_auth_enabled:
-            raise TwoFactorAuthNotEnabled(
-                "2FA have not been enabled. Please enable first to login."
-            )
+            raise TwoFactorAuthNotEnabled(user.id)
 
         token = jwt.encode({"user_id": user.id}, SECRET_KEY, algorithm="HS256")
 

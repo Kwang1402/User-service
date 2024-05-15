@@ -84,12 +84,15 @@ def wait_for_webapp():
     return requests.get(config.get_api_url())
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def sqlite_db():
     engine = create_engine(config.get_sqlite_uri(), isolation_level="SERIALIZABLE")
     wait_for_sqlite(engine)
     metadata.create_all(engine)
-    return engine
+    yield engine
+
+    metadata.drop_all(engine)
+    engine.dispose()
 
 
 @pytest.fixture

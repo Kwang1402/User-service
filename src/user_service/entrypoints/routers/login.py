@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Request, HTTPException, status
+from fastapi.responses import JSONResponse, RedirectResponse
 from user_service.domains import commands
 from ..dependencies import bus
 from user_service.service_layer.handlers import (
@@ -18,7 +18,15 @@ async def login(request: Request):
         results = bus.handle(cmd)
         user_id, token = results[0]
 
-    except (IncorrectCredentials, TwoFactorAuthNotEnabled) as e:
-        raise HTTPException(status_code=401, detail=str(e))
+    except IncorrectCredentials as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
-    return JSONResponse(content={"user_id": user_id, "token": token}, status_code=200)
+    except TwoFactorAuthNotEnabled as e:
+        return RedirectResponse(
+            url=f"/user/{e.args[0]}/enable-2fa",
+            status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+        )
+
+    return JSONResponse(
+        content={"user_id": user_id, "token": token}, status_code=status.HTTP_200_OK
+    )

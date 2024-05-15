@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from user_service.domains import commands
 from ..dependencies import bus
@@ -16,6 +16,8 @@ async def reset_password(request: Request):
         new_password = results[0]
 
     except IncorrectCredentials as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    return JSONResponse(content={"new_password": new_password}, status_code=200)
+    return JSONResponse(
+        content={"new_password": new_password}, status_code=status.HTTP_200_OK
+    )
