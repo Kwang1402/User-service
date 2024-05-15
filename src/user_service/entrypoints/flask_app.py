@@ -20,7 +20,7 @@ class InvalidPassword(Exception):
     pass
 
 
-class UnathorizedAccess(Exception):
+class UnauthorizedAccess(Exception):
     pass
 
 
@@ -46,17 +46,17 @@ def validate_password(password: str):
 
 def validate_token(token, user_id):
     if not token:
-        raise UnathorizedAccess("Authorization token missing")
+        raise UnauthorizedAccess("Authorization token missing")
 
     try:
         decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         authenticated_user_id = decoded_token.get("user_id")
 
         if authenticated_user_id != user_id:
-            raise UnathorizedAccess("Unauthorized access to user account")
+            raise UnauthorizedAccess("Unauthorized access to user account")
 
     except jwt.InvalidTokenError:
-        raise UnathorizedAccess("Invalid token")
+        raise UnauthorizedAccess("Invalid token")
 
 
 @bp.route("/register", methods=["POST"])
@@ -125,7 +125,7 @@ def get_user(user_id):
         token = request.headers.get("Authorization", "").replace("Bearer ", "")
         validate_token(token, user_id)
 
-    except UnathorizedAccess as e:
+    except UnauthorizedAccess as e:
         return jsonify({"error": str(e)}), 401
 
     try:
@@ -133,7 +133,7 @@ def get_user(user_id):
         results = bus.handle(cmd)
         user = results[0]
 
-    except UnathorizedAccess as e:
+    except UnauthorizedAccess as e:
         return jsonify({"error": str(e)}), 401
 
     return jsonify({"user": user}), 200

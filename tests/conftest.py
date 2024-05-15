@@ -6,10 +6,11 @@ import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, clear_mappers
 from tenacity import retry, stop_after_delay
+from fastapi.testclient import TestClient
 
 from src.user_service.adapters.orm import start_mappers, metadata
 from src.user_service import config
-from src.user_service.entrypoints.app import create_app
+from user_service.entrypoints.fastapi_app import app
 from tests import random_refs
 
 
@@ -50,25 +51,8 @@ def data2():
 
 
 @pytest.fixture()
-def app():
-    app = create_app()
-    app.config.update(
-        {
-            "TESTING": True,
-        }
-    )
-
-    yield app
-
-
-@pytest.fixture()
-def client(app):
-    return app.test_client()
-
-
-@pytest.fixture()
-def runner(app):
-    return app.test_cli_runner()
+def client():
+    return TestClient(app)
 
 
 @pytest.fixture
@@ -100,12 +84,15 @@ def wait_for_webapp():
     return requests.get(config.get_api_url())
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def sqlite_db():
     engine = create_engine(config.get_sqlite_uri(), isolation_level="SERIALIZABLE")
     wait_for_sqlite(engine)
     metadata.create_all(engine)
-    return engine
+    yield engine
+
+    metadata.drop_all(engine)
+    engine.dispose()
 
 
 @pytest.fixture
