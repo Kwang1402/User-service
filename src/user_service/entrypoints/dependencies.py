@@ -34,7 +34,7 @@ def validate_password(password: str):
     return True
 
 
-async def validate_token(token, user_id):
+def validate_token(token, user_id):
     if not token:
         raise UnauthorizedAccess("Authorization token missing")
 

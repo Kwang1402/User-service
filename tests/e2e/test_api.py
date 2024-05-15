@@ -136,9 +136,9 @@ def test_login_and_verify_enable_two_factor_auth_expired_otp_code_returns_400(
     )
     user_id = r.json()["user_id"]
     otp_code = r.json()["otp_code"]
+    time.sleep(30)
 
     # act
-    time.sleep(30)
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
 
     # assert
@@ -151,24 +151,25 @@ def test_login_and_verify_enable_two_factor_auth_expired_otp_code_returns_400(
 def test_logged_in_successfully_returns_200(
     client,
     data,
-    cleanup_database,
 ):
+    # arrange
     r = client.post("/register", json=data)
-
-    r = client.post("/enable-2fa", json={"email": data["email"]})
-
-    otp_code = r.json["otp_code"]
-    r = client.post(
-        "/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code}
-    )
-
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
+    user_id = r.json()["user_id"]
+    otp_code = r.json()["otp_code"]
+    r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
+
+    # act
+    r = client.post(
+        "/login", json={"email": data["email"], "password": data["password"]}
+    )
+
+    # assert
     print(r.__dict__)
-    assert r.status_code == 200
-    assert r.json["token"] is not None
-    cleanup_database.append(data["email"])
+    assert r.status_code == status.HTTP_200_OK
+    assert "token" in r.json()
 
 
 @pytest.mark.usefixtures("sqlite_db")
@@ -176,118 +177,122 @@ def test_logged_in_incorrect_email_returns_401(
     client,
     data,
 ):
+    # arrange
+
+    # act
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
+
+    # assert
     print(r.__dict__)
-    assert r.status_code == 401
-    assert r.json["error"] == "Incorrect email or password"
+    assert r.status_code == status.HTTP_401_UNAUTHORIZED
+    assert r.json() == {"detail": "Incorrect email or password"}
 
 
 @pytest.mark.usefixtures("sqlite_db")
 def test_logged_in_incorrect_password_returns_401(
     client,
     data,
-    cleanup_database,
 ):
+    # arrange
     r = client.post("/register", json=data)
 
+    # act
     r = client.post(
         "/login",
         json={"email": data["email"], "password": random_refs.random_valid_password()},
     )
+
+    # assert
     print(r.__dict__)
-    assert r.status_code == 401
-    assert r.json["error"] == "Incorrect email or password"
-    cleanup_database.append(data["email"])
+    assert r.status_code == status.HTTP_401_UNAUTHORIZED
+    assert r.json() == {"detail": "Incorrect email or password"}
 
 
 @pytest.mark.usefixtures("sqlite_db")
 def test_get_user_successfully_returns_200(
     client,
     data,
-    cleanup_database,
 ):
+    # arrange
     r = client.post("/register", json=data)
-
-    r = client.post("/enable-2fa", json={"email": data["email"]})
-
-    otp_code = r.json["otp_code"]
-    r = client.post(
-        "/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code}
-    )
-
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
+    user_id = r.json()["user_id"]
+    otp_code = r.json()["otp_code"]
+    r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
+    r = client.post(
+        "/login", json={"email": data["email"], "password": data["password"]}
+    )
+    user_id = r.json()["user_id"]
+    token = r.json()["token"]
 
-    user_id = r.json["user_id"]
-    token = r.json["token"]
+    # act
     r = client.get(f"/user/{user_id}", headers={"Authorization": f"Bearer {token}"})
+
+    # assert
     print(r.__dict__)
-    assert r.status_code == 200
-    assert r.json["user"] == {"username": data["username"], "email": data["email"]}
-    cleanup_database.append(data["email"])
+    assert r.status_code == status.HTTP_200_OK
+    assert r.json() == {"user": {"username": data["username"], "email": data["email"]}}
 
 
 @pytest.mark.usefixtures("sqlite_db")
 def test_get_user_missing_token_returns_401(
     client,
     data,
-    cleanup_database,
 ):
+    # arrange
     r = client.post("/register", json=data)
-
-    r = client.post("/enable-2fa", json={"email": data["email"]})
-
-    otp_code = r.json["otp_code"]
-    r = client.post(
-        "/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code}
-    )
-
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
+    user_id = r.json()["user_id"]
+    otp_code = r.json()["otp_code"]
+    r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
+    r = client.post(
+        "/login", json={"email": data["email"], "password": data["password"]}
+    )
+    user_id = r.json()["user_id"]
 
-    user_id = r.json["user_id"]
-
+    # act
     r = client.get(f"/user/{user_id}")
+
+    # assert
     print(r.__dict__)
-    assert r.status_code == 401
-    assert r.json["error"] == "Authorization token missing"
-    cleanup_database.append(data["email"])
+    assert r.status_code == status.HTTP_401_UNAUTHORIZED
+    assert r.json() == {"detail": "Authorization token missing"}
 
 
 @pytest.mark.usefixtures("sqlite_db")
 def test_get_user_invalid_token_returns_401(
     client,
     data,
-    cleanup_database,
 ):
+    # arrange
     r = client.post("/register", json=data)
-
-    r = client.post("/enable-2fa", json={"email": data["email"]})
-
-    otp_code = r.json["otp_code"]
-    r = client.post(
-        "/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code}
-    )
-
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
-
-    user_id = r.json["user_id"]
-
+    user_id = r.json()["user_id"]
+    otp_code = r.json()["otp_code"]
+    r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
+    r = client.post(
+        "/login", json={"email": data["email"], "password": data["password"]}
+    )
+    user_id = r.json()["user_id"]
     invalid_token = jwt.encode({"user_id": user_id}, "random_key", algorithm="HS256")
 
+    # act
     r = client.get(
         f"/user/{user_id}", headers={"Authorization": f"Bearer {invalid_token}"}
     )
+
+    # assert
     print(r.__dict__)
-    assert r.status_code == 401
-    assert r.json["error"] == "Invalid token"
-    cleanup_database.append(data["email"])
+    assert r.status_code == status.HTTP_401_UNAUTHORIZED
+    assert r.json() == {"detail": "Invalid token"}
 
 
 @pytest.mark.usefixtures("sqlite_db")
@@ -295,58 +300,55 @@ def test_get_user_unmatching_user_id_returns_401(
     client,
     data,
     data2,
-    cleanup_database,
 ):
+    # arrange
     r = client.post("/register", json=data)
-    r = client.post("/enable-2fa", json={"email": data["email"]})
-    otp_code = r.json["otp_code"]
     r = client.post(
-        "/verify-enable-2fa", json={"email": data["email"], "otp_code": otp_code}
+        "/login", json={"email": data["email"], "password": data["password"]}
     )
+    user_id = r.json()["user_id"]
+    otp_code = r.json()["otp_code"]
+    r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
 
     r = client.post("/register", json=data2)
-    r = client.post("/enable-2fa", json={"email": data2["email"]})
-    otp_code = r.json["otp_code"]
     r = client.post(
-        "/verify-enable-2fa", json={"email": data2["email"], "otp_code": otp_code}
+        "/login", json={"email": data2["email"], "password": data2["password"]}
     )
+    user2_id = r.json()["user_id"]
+    otp_code = r.json()["otp_code"]
+    r = client.patch(f"/user/{user2_id}/verify-enable-2fa", json={"otp_code": otp_code})
 
     r = client.post(
         "/login", json={"email": data["email"], "password": data["password"]}
     )
+    token = r.json()["token"]
 
-    token = r.json["token"]
-
-    r = client.post(
-        "/login", json={"email": data2["email"], "password": data2["password"]}
-    )
-
-    user2_id = r.json["user_id"]
-
+    # act
     r = client.get(f"/user/{user2_id}", headers={"Authorization": f"Bearer {token}"})
+
+    # assert
     print(r.__dict__)
-    assert r.status_code == 401
-    assert r.json["error"] == "Unauthorized access to user account"
-    cleanup_database.append(data["email"])
-    cleanup_database.append(data2["email"])
+    assert r.status_code == status.HTTP_401_UNAUTHORIZED
+    assert r.json() == {"detail": "Unauthorized access to user account"}
 
 
 @pytest.mark.usefixtures("sqlite_db")
 def test_reset_password_successfully_returns_200(
     client,
     data,
-    cleanup_database,
 ):
+    # arrange
     r = client.post("/register", json=data)
 
+    # act
     r = client.post(
         "/reset-password", json={"email": data["email"], "username": data["username"]}
     )
 
+    # assert
     print(r.__dict__)
-    assert r.status_code == 200
-    assert r.json["new_password"] is not None
-    cleanup_database.append(data["email"])
+    assert r.status_code == status.HTTP_200_OK
+    assert "new_password" in r.json()
 
 
 @pytest.mark.usefixtures("sqlite_db")
@@ -354,12 +356,17 @@ def test_reset_password_incorrect_email_returns_400(
     client,
     data,
 ):
+    # arrange
+
+    # act
     r = client.post(
         "/reset-password", json={"email": data["email"], "username": data["username"]}
     )
+
+    # assert
     print(r.__dict__)
-    assert r.status_code == 400
-    assert r.json["error"] == "Incorrect email or username"
+    assert r.status_code == status.HTTP_400_BAD_REQUEST
+    assert r.json() == {"detail": "Incorrect email or username"}
 
 
 @pytest.mark.usefixtures("sqlite_db")
@@ -367,15 +374,16 @@ def test_reset_password_incorrect_username_returns_400(
     client,
     data,
     data2,
-    cleanup_database,
 ):
+    # arrange
     r = client.post("/register", json=data)
 
+    # act
     r = client.post(
         "/reset-password", json={"email": data["email"], "username": data2["username"]}
     )
-    print(r.__dict__)
-    assert r.status_code == 400
-    assert r.json["error"] == "Incorrect email or username"
 
-    cleanup_database.append(data["email"])
+    # assert
+    print(r.__dict__)
+    assert r.status_code == status.HTTP_400_BAD_REQUEST
+    assert r.json() == {"detail": "Incorrect email or username"}

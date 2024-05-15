@@ -11,7 +11,7 @@ router = APIRouter()
 async def get_user(user_id: str, request: Request):
     authorization = request.headers.get("Authorization", "")
     try:
-        token = authorization.replace("Bearer", "")
+        token = authorization.replace("Bearer ", "")
         validate_token(token, user_id)
     except UnauthorizedAccess as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
