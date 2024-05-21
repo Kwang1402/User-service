@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Request, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from user_service.domains import commands
 from ..dependencies import bus
+from ..schemas import LoginRequest
 from user_service.service_layer.handlers import (
     IncorrectCredentials,
     TwoFactorAuthNotEnabled,
@@ -11,10 +12,9 @@ router = APIRouter()
 
 
 @router.post("/login")
-async def login(request: Request):
+async def login(body: LoginRequest):
     try:
-        body = await request.json()
-        cmd = commands.LoginCommand(**body)
+        cmd = commands.LoginCommand(**body.model_dump())
         results = bus.handle(cmd)
         user_id, token = results[0]
 

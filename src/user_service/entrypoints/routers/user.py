@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from user_service.domains import commands
 from ..dependencies import validate_token, UnauthorizedAccess, bus
+from ..schemas import VerifyEnableTwoFactorAuthRequest
 from user_service.service_layer.handlers import IncorrectCredentials, InvalidOTP
 
 router = APIRouter()
@@ -36,10 +37,9 @@ async def enable_two_factor_auth(user_id: str):
 
 
 @router.patch("/user/{user_id}/verify-enable-2fa")
-async def verify_enable_two_factor_auth(user_id: str, request: Request):
+async def verify_enable_two_factor_auth(user_id: str, body: VerifyEnableTwoFactorAuthRequest):
     try:
-        body = await request.json()
-        cmd = commands.VerifyEnableTwoFactorAuthCommand(user_id, **body)
+        cmd = commands.VerifyEnableTwoFactorAuthCommand(user_id, **body.model_dump())
         bus.handle(cmd)
 
     except (IncorrectCredentials, InvalidOTP) as e:

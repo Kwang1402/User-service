@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Request, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from user_service.domains import commands
 from ..dependencies import bus
+from ..schemas import ResetPasswordRequest
 from user_service.service_layer.handlers import IncorrectCredentials
 
 router = APIRouter()
 
 
 @router.post("/reset-password")
-async def reset_password(request: Request):
+async def reset_password(body: ResetPasswordRequest):
     try:
-        body = await request.json()
-        cmd = commands.ResetPasswordCommand(**body)
+        cmd = commands.ResetPasswordCommand(**body.model_dump())
         results = bus.handle(cmd)
         new_password = results[0]
 

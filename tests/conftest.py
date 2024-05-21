@@ -20,9 +20,6 @@ def data():
         "username": random_refs.random_username(),
         "email": random_refs.random_email(),
         "password": random_refs.random_valid_password(),
-        "backup_email": None,
-        "gender": None,
-        "date_of_birth": None,
     }
 
 
@@ -32,9 +29,6 @@ def invalid_password_data():
         "username": random_refs.random_username(),
         "email": random_refs.random_email(),
         "password": random_refs.random_invalid_password(),
-        "backup_email": None,
-        "gender": None,
-        "date_of_birth": None,
     }
 
 
@@ -44,9 +38,6 @@ def data2():
         "username": random_refs.random_username(),
         "email": random_refs.random_email(),
         "password": random_refs.random_valid_password(),
-        "backup_email": None,
-        "gender": None,
-        "date_of_birth": None,
     }
 
 

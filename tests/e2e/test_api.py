@@ -5,6 +5,8 @@ from flask_bcrypt import Bcrypt
 import jwt
 import pyotp
 import time
+import json
+import random
 
 bcrypt = Bcrypt()
 
@@ -24,6 +26,35 @@ def test_registered_successfully_returns_201(
     assert r.status_code == status.HTTP_201_CREATED
     assert r.json() == {"message": "User successfully registered"}
 
+@pytest.mark.usefixtures("sqlite_db")
+def test_registered_missing_field_returns_422(
+    client,
+    data,
+):
+    # arrange
+    del_key = random.choice(list(data.keys()))
+    del data[del_key]
+
+    # act
+    r = client.post("/register", json=data)
+
+    # assert
+    print(r.__dict__)
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+@pytest.mark.usefixtures("sqlite_db")
+def test_registered_not_json_returns_422(
+    client,
+    data,
+):
+    # arrange
+    
+    # act
+    r = client.post("/register", content=str(data))
+
+    # assert
+    print(r.__dict__)
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 @pytest.mark.usefixtures("sqlite_db")
 def test_registered_invalid_password_returns_400(
