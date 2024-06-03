@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 import string
 import jwt
 from user_service.config import SECRET_KEY
@@ -7,10 +8,6 @@ bus = bootstrap.bootstrap()
 
 
 class InvalidPassword(Exception):
-    pass
-
-
-class UnauthorizedAccess(Exception):
     pass
 
 
@@ -34,16 +31,12 @@ def validate_password(password: str):
     return True
 
 
-def validate_token(token, user_id):
-    if not token:
-        raise UnauthorizedAccess("Authorization token missing")
-
-    try:
-        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        authenticated_user_id = decoded_token.get("user_id")
-
-        if authenticated_user_id != user_id:
-            raise UnauthorizedAccess("Unauthorized access to user account")
-
-    except jwt.InvalidTokenError:
-        raise UnauthorizedAccess("Invalid token")
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
+    return encoded_jwt

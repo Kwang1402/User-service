@@ -1,25 +1,45 @@
-from fastapi import APIRouter, Request, HTTPException, status
+from typing import Annotated
+
+import jwt
+from jwt.exceptions import InvalidTokenError
+from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordBearer
 from user_service.domains import commands
-from ..dependencies import validate_token, UnauthorizedAccess, bus
+from ..dependencies import bus
 from ..schemas import VerifyEnableTwoFactorAuthRequest
 from user_service.service_layer.handlers import IncorrectCredentials, InvalidOTP
+from user_service.config import SECRET_KEY
 
 router = APIRouter()
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
 
 @router.get("/user/{user_id}")
-async def get_user(user_id: str, request: Request):
-    authorization = request.headers.get("Authorization", "")
+async def get_user(user_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
     try:
-        token = authorization.replace("Bearer ", "")
-        validate_token(token, user_id)
-    except UnauthorizedAccess as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        token_user_id: str = payload.get("sub")
+        if token_user_id != user_id:
+            raise InvalidTokenError("Not authenticated")
+    except InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    cmd = commands.GetUserCommand(user_id, token)
-    results = bus.handle(cmd)
-    user = results[0]
+    try:
+        cmd = commands.GetUserCommand(user_id)
+        results = bus.handle(cmd)
+        user = results[0]
+    except IncorrectCredentials as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     return JSONResponse(content={"user": user}, status_code=status.HTTP_200_OK)
 
@@ -37,7 +57,9 @@ async def enable_two_factor_auth(user_id: str):
 
 
 @router.patch("/user/{user_id}/verify-enable-2fa")
-async def verify_enable_two_factor_auth(user_id: str, body: VerifyEnableTwoFactorAuthRequest):
+async def verify_enable_two_factor_auth(
+    user_id: str, body: VerifyEnableTwoFactorAuthRequest
+):
     try:
         cmd = commands.VerifyEnableTwoFactorAuthCommand(user_id, **body.model_dump())
         bus.handle(cmd)

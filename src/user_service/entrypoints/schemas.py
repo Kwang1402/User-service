@@ -1,6 +1,7 @@
 import pydantic
 from datetime import date
 
+
 class RegisterRequest(pydantic.BaseModel):
     username: str
     email: str
@@ -9,13 +10,16 @@ class RegisterRequest(pydantic.BaseModel):
     gender: str | None = None
     date_of_birth: date | None = None
 
-class LoginRequest(pydantic.BaseModel):
-    email: str
-    password: str
 
 class ResetPasswordRequest(pydantic.BaseModel):
     email: str
     username: str
 
+
 class VerifyEnableTwoFactorAuthRequest(pydantic.BaseModel):
     otp_code: str
+
+
+class Token(pydantic.BaseModel):
+    access_token: str
+    token_type: str

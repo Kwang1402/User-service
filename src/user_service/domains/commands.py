@@ -11,9 +11,9 @@ class RegisterCommand(Command):
     username: str
     email: str
     password: str
-    backup_email: str
-    gender: str
-    date_of_birth: date
+    backup_email: str | None = None
+    gender: str | None = None
+    date_of_birth: date | None = None
 
 
 @dataclasses.dataclass
@@ -36,7 +36,6 @@ class LoginCommand(Command):
 @dataclasses.dataclass
 class GetUserCommand(Command):
     user_id: str
-    token: str
 
 
 @dataclasses.dataclass

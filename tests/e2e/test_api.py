@@ -1,14 +1,11 @@
 import pytest
 from tests import random_refs
 from fastapi import status
-from flask_bcrypt import Bcrypt
 import jwt
 import pyotp
 import time
-import json
 import random
-
-bcrypt = Bcrypt()
+from datetime import datetime, timedelta, timezone
 
 
 @pytest.mark.usefixtures("sqlite_db")
@@ -26,6 +23,7 @@ def test_registered_successfully_returns_201(
     assert r.status_code == status.HTTP_201_CREATED
     assert r.json() == {"message": "User successfully registered"}
 
+
 @pytest.mark.usefixtures("sqlite_db")
 def test_registered_missing_field_returns_422(
     client,
@@ -42,19 +40,21 @@ def test_registered_missing_field_returns_422(
     print(r.__dict__)
     assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
+
 @pytest.mark.usefixtures("sqlite_db")
 def test_registered_not_json_returns_422(
     client,
     data,
 ):
     # arrange
-    
+
     # act
     r = client.post("/register", content=str(data))
 
     # assert
     print(r.__dict__)
     assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
 
 @pytest.mark.usefixtures("sqlite_db")
 def test_registered_invalid_password_returns_400(
@@ -101,7 +101,7 @@ def test_login_two_factor_auth_not_enabled_returns_202(
 
     # act
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
 
     # assert
@@ -119,7 +119,7 @@ def test_login_and_verify_enable_two_factor_auth_successfully_returns_200(
     # arrange
     r = client.post("/register", json=data)
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
     otp_code = r.json()["otp_code"]
@@ -141,7 +141,7 @@ def test_login_and_verify_enable_two_factor_auth_incorrect_otp_code_returns_400(
     # arrange
     r = client.post("/register", json=data)
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
 
@@ -163,7 +163,7 @@ def test_login_and_verify_enable_two_factor_auth_expired_otp_code_returns_400(
     # arrange
     r = client.post("/register", json=data)
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
     otp_code = r.json()["otp_code"]
@@ -186,7 +186,7 @@ def test_logged_in_successfully_returns_200(
     # arrange
     r = client.post("/register", json=data)
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
     otp_code = r.json()["otp_code"]
@@ -194,7 +194,7 @@ def test_logged_in_successfully_returns_200(
 
     # act
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
 
     # assert
@@ -212,7 +212,7 @@ def test_logged_in_incorrect_email_returns_401(
 
     # act
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
 
     # assert
@@ -232,7 +232,10 @@ def test_logged_in_incorrect_password_returns_401(
     # act
     r = client.post(
         "/login",
-        json={"email": data["email"], "password": random_refs.random_valid_password()},
+        data={
+            "username": data["email"],
+            "password": random_refs.random_valid_password(),
+        },
     )
 
     # assert
@@ -249,19 +252,21 @@ def test_get_user_successfully_returns_200(
     # arrange
     r = client.post("/register", json=data)
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
     otp_code = r.json()["otp_code"]
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
     token = r.json()["token"]
 
     # act
-    r = client.get(f"/user/{user_id}", headers={"Authorization": f"Bearer {token}"})
+    r = client.get(
+        f"/user/{user_id}", headers={"Authorization": f"Bearer {token['access_token']}"}
+    )
 
     # assert
     print(r.__dict__)
@@ -277,13 +282,13 @@ def test_get_user_missing_token_returns_401(
     # arrange
     r = client.post("/register", json=data)
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
     otp_code = r.json()["otp_code"]
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
 
@@ -293,7 +298,7 @@ def test_get_user_missing_token_returns_401(
     # assert
     print(r.__dict__)
     assert r.status_code == status.HTTP_401_UNAUTHORIZED
-    assert r.json() == {"detail": "Authorization token missing"}
+    assert r.json() == {"detail": "Not authenticated"}
 
 
 @pytest.mark.usefixtures("sqlite_db")
@@ -304,16 +309,16 @@ def test_get_user_invalid_token_returns_401(
     # arrange
     r = client.post("/register", json=data)
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
     otp_code = r.json()["otp_code"]
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
-    invalid_token = jwt.encode({"user_id": user_id}, "random_key", algorithm="HS256")
+    invalid_token = jwt.encode({"sub": user_id, "exp": datetime.now(timezone.utc) + timedelta(minutes=15)}, "random_key", algorithm="HS256")
 
     # act
     r = client.get(
@@ -323,7 +328,7 @@ def test_get_user_invalid_token_returns_401(
     # assert
     print(r.__dict__)
     assert r.status_code == status.HTTP_401_UNAUTHORIZED
-    assert r.json() == {"detail": "Invalid token"}
+    assert r.json() == {"detail": "Signature verification failed"}
 
 
 @pytest.mark.usefixtures("sqlite_db")
@@ -335,7 +340,7 @@ def test_get_user_unmatching_user_id_returns_401(
     # arrange
     r = client.post("/register", json=data)
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
     otp_code = r.json()["otp_code"]
@@ -343,24 +348,24 @@ def test_get_user_unmatching_user_id_returns_401(
 
     r = client.post("/register", json=data2)
     r = client.post(
-        "/login", json={"email": data2["email"], "password": data2["password"]}
+        "/login", data={"username": data2["email"], "password": data2["password"]}
     )
     user2_id = r.json()["user_id"]
     otp_code = r.json()["otp_code"]
     r = client.patch(f"/user/{user2_id}/verify-enable-2fa", json={"otp_code": otp_code})
 
     r = client.post(
-        "/login", json={"email": data["email"], "password": data["password"]}
+        "/login", data={"username": data["email"], "password": data["password"]}
     )
     token = r.json()["token"]
 
     # act
-    r = client.get(f"/user/{user2_id}", headers={"Authorization": f"Bearer {token}"})
+    r = client.get(f"/user/{user2_id}", headers={"Authorization": f"Bearer {token['access_token']}"})
 
     # assert
     print(r.__dict__)
     assert r.status_code == status.HTTP_401_UNAUTHORIZED
-    assert r.json() == {"detail": "Unauthorized access to user account"}
+    assert r.json() == {"detail": "Not authenticated"}
 
 
 @pytest.mark.usefixtures("sqlite_db")
