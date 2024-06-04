@@ -8,7 +8,19 @@ from user_service.service_layer.handlers import IncorrectCredentials
 router = APIRouter()
 
 
-@router.post("/reset-password")
+@router.post(
+    "/reset-password",
+    tags=["users"],
+    summary="Reset user's password",
+    responses={
+        status.HTTP_200_OK: {
+            "content": {"application/json": {"example": {"new_password": "string"}}}
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "content": {"application/json": {"example": {"detail": "string"}}}
+        },
+    },
+)
 async def reset_password(body: ResetPasswordRequest):
     try:
         cmd = commands.ResetPasswordCommand(**body.model_dump())

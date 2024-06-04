@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from .routers import register, login, user, reset_password
+from user_service.entrypoints.routers import register, login, user, reset_password
 
-app = FastAPI()
+
+app = FastAPI(docs_url=None, redoc_url="/docs")
 
 app.include_router(register.router)
 app.include_router(login.router)

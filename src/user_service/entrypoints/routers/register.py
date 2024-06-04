@@ -8,7 +8,27 @@ from ..schemas import RegisterRequest
 router = APIRouter()
 
 
-@router.post("/register")
+@router.post(
+    "/register",
+    tags=["users"],
+    summary="Register a new user",
+    responses={
+        status.HTTP_200_OK: {},
+        status.HTTP_201_CREATED: {
+            "content": {
+                "application/json": {
+                    "example": {"message": "User successfully registered"}
+                }
+            }
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "content": {"application/json": {"example": {"detail": "string"}}}
+        },
+        status.HTTP_409_CONFLICT: {
+            "content": {"application/json": {"example": {"detail": "string"}}}
+        },
+    },
+)
 async def register(body: RegisterRequest):
     try:
         validate_password(body.password)

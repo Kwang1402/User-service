@@ -318,7 +318,11 @@ def test_get_user_invalid_token_returns_401(
         "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
-    invalid_token = jwt.encode({"sub": user_id, "exp": datetime.now(timezone.utc) + timedelta(minutes=15)}, "random_key", algorithm="HS256")
+    invalid_token = jwt.encode(
+        {"sub": user_id, "exp": datetime.now(timezone.utc) + timedelta(minutes=15)},
+        "random_key",
+        algorithm="HS256",
+    )
 
     # act
     r = client.get(
@@ -360,7 +364,10 @@ def test_get_user_unmatching_user_id_returns_401(
     token = r.json()["token"]
 
     # act
-    r = client.get(f"/user/{user2_id}", headers={"Authorization": f"Bearer {token['access_token']}"})
+    r = client.get(
+        f"/user/{user2_id}",
+        headers={"Authorization": f"Bearer {token['access_token']}"},
+    )
 
     # assert
     print(r.__dict__)

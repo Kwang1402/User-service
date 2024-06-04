@@ -16,7 +16,23 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
-@router.get("/user/{user_id}")
+@router.get(
+    "/user/{user_id}",
+    tags=["users"],
+    summary="Get the user account",
+    responses={
+        status.HTTP_200_OK: {
+            "content": {
+                "application/json": {
+                    "example": {"user": {"username": "string", "email": "string"}}
+                }
+            }
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "content": {"application/json": {"example": {"detail": "string"}}}
+        },
+    },
+)
 async def get_user(user_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -44,7 +60,20 @@ async def get_user(user_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
     return JSONResponse(content={"user": user}, status_code=status.HTTP_200_OK)
 
 
-@router.post("/user/{user_id}/enable-2fa")
+@router.post(
+    "/user/{user_id}/enable-2fa",
+    tags=["users"],
+    summary="Send OTP code to enable 2FA",
+    responses={
+        status.HTTP_202_ACCEPTED: {
+            "content": {
+                "application/json": {
+                    "example": {"user_id": "string", "otp_code": "string"}
+                }
+            }
+        },
+    },
+)
 async def enable_two_factor_auth(user_id: str):
     cmd = commands.EnableTwoFactorAuthCommand(user_id)
     results = bus.handle(cmd)
@@ -56,7 +85,25 @@ async def enable_two_factor_auth(user_id: str):
     )
 
 
-@router.patch("/user/{user_id}/verify-enable-2fa")
+@router.patch(
+    "/user/{user_id}/verify-enable-2fa",
+    tags=["users"],
+    summary="Verify OTP code to enable 2FA",
+    responses={
+        status.HTTP_200_OK: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Two-Factor Authentication successfully enabled"
+                    }
+                }
+            }
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "content": {"application/json": {"example": {"detail": "string"}}}
+        },
+    },
+)
 async def verify_enable_two_factor_auth(
     user_id: str, body: VerifyEnableTwoFactorAuthRequest
 ):

@@ -13,7 +13,27 @@ from user_service.service_layer.handlers import (
 router = APIRouter()
 
 
-@router.post("/login")
+@router.post(
+    "/login",
+    tags=["users"],
+    summary="Login for user",
+    responses={
+        status.HTTP_200_OK: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "user_id": "string",
+                        "token": {"access_token": "string", "token_type": "str"},
+                    }
+                }
+            }
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Unauthorized",
+            "content": {"application/json": {"example": {"detail": "string"}}},
+        },
+    },
+)
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     try:
         cmd = commands.LoginCommand(form_data.username, form_data.password)
