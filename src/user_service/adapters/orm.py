@@ -21,16 +21,16 @@ logger = logging.getLogger(__name__)
 
 mapper_registry = registry()
 metadata = MetaData()
-engine = create_engine(config.get_sqlite_uri())
+engine = create_engine(config.get_mysql_uri())
 
 users = Table(
     "users",
     metadata,
-    Column("id", String, primary_key=True),
-    Column("username", String),
-    Column("email", String, unique=True),
-    Column("password", String),
-    Column("secret_token", String, unique=True),
+    Column("id", String(255), primary_key=True),
+    Column("username", String(255)),
+    Column("email", String(255), unique=True),
+    Column("password", String(255)),
+    Column("secret_token", String(255), unique=True),
     Column("two_factor_auth_enabled", Boolean),
     Column("locked", Boolean),
     Column("created_time", TIMESTAMP),
@@ -40,10 +40,10 @@ users = Table(
 profiles = Table(
     "profiles",
     metadata,
-    Column("id", String, primary_key=True),
-    Column("user_id", String, ForeignKey("users.id"), nullable=False),
-    Column("backup_email", String),
-    Column("gender", String),
+    Column("id", String(255), primary_key=True),
+    Column("user_id", String(255), ForeignKey("users.id"), nullable=False),
+    Column("backup_email", String(255)),
+    Column("gender", String(255)),
     Column("date_of_birth", Date),
     Column("created_time", TIMESTAMP),
     Column("updated_time", TIMESTAMP),

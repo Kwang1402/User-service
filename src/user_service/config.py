@@ -3,9 +3,9 @@ import sqlalchemy
 SECRET_KEY = "sample_user_service_secret_key"
 
 
-def get_sqlite_uri():
-    sqlite_uri = "sqlite:///user_service.db"
-    return sqlite_uri
+def get_mysql_uri():
+    mysql_uri = "mysql+pymysql://test_user:test_password@localhost:3307/test_db"
+    return mysql_uri
 
 
 def get_api_url():

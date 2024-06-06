@@ -8,7 +8,7 @@ import random
 from datetime import datetime, timedelta, timezone
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_registered_successfully_returns_201(
     client,
     data,
@@ -24,7 +24,7 @@ def test_registered_successfully_returns_201(
     assert r.json() == {"message": "User successfully registered"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_registered_missing_field_returns_422(
     client,
     data,
@@ -41,7 +41,7 @@ def test_registered_missing_field_returns_422(
     assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_registered_not_json_returns_422(
     client,
     data,
@@ -56,7 +56,7 @@ def test_registered_not_json_returns_422(
     assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_registered_invalid_password_returns_400(
     client,
     invalid_password_data,
@@ -72,7 +72,7 @@ def test_registered_invalid_password_returns_400(
     assert r.json() == {"detail": "Invalid password"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_registered_email_already_existed_returns_409(
     client,
     data,
@@ -91,7 +91,7 @@ def test_registered_email_already_existed_returns_409(
     assert r.json() == {"detail": f"Email {data2['email']} already existed"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_login_two_factor_auth_not_enabled_returns_202(
     client,
     data,
@@ -111,7 +111,7 @@ def test_login_two_factor_auth_not_enabled_returns_202(
     assert "otp_code" in r.json()
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_login_and_verify_enable_two_factor_auth_successfully_returns_200(
     client,
     data,
@@ -133,7 +133,7 @@ def test_login_and_verify_enable_two_factor_auth_successfully_returns_200(
     assert r.json() == {"message": "Two-Factor Authentication successfully enabled"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_login_and_verify_enable_two_factor_auth_incorrect_otp_code_returns_400(
     client,
     data,
@@ -155,7 +155,7 @@ def test_login_and_verify_enable_two_factor_auth_incorrect_otp_code_returns_400(
     assert r.json() == {"detail": "Invalid OTP code"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_login_and_verify_enable_two_factor_auth_expired_otp_code_returns_400(
     client,
     data,
@@ -178,7 +178,7 @@ def test_login_and_verify_enable_two_factor_auth_expired_otp_code_returns_400(
     assert r.json() == {"detail": "Invalid OTP code"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_logged_in_successfully_returns_200(
     client,
     data,
@@ -203,7 +203,7 @@ def test_logged_in_successfully_returns_200(
     assert "token" in r.json()
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_logged_in_incorrect_email_returns_401(
     client,
     data,
@@ -221,7 +221,7 @@ def test_logged_in_incorrect_email_returns_401(
     assert r.json() == {"detail": "Incorrect email or password"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_logged_in_incorrect_password_returns_401(
     client,
     data,
@@ -244,7 +244,7 @@ def test_logged_in_incorrect_password_returns_401(
     assert r.json() == {"detail": "Incorrect email or password"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_get_user_successfully_returns_200(
     client,
     data,
@@ -274,7 +274,7 @@ def test_get_user_successfully_returns_200(
     assert r.json() == {"user": {"username": data["username"], "email": data["email"]}}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_get_user_missing_token_returns_401(
     client,
     data,
@@ -301,7 +301,7 @@ def test_get_user_missing_token_returns_401(
     assert r.json() == {"detail": "Not authenticated"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_get_user_invalid_token_returns_401(
     client,
     data,
@@ -335,7 +335,7 @@ def test_get_user_invalid_token_returns_401(
     assert r.json() == {"detail": "Signature verification failed"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_get_user_unmatching_user_id_returns_401(
     client,
     data,
@@ -375,7 +375,7 @@ def test_get_user_unmatching_user_id_returns_401(
     assert r.json() == {"detail": "Not authenticated"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_reset_password_successfully_returns_200(
     client,
     data,
@@ -394,7 +394,7 @@ def test_reset_password_successfully_returns_200(
     assert "new_password" in r.json()
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_reset_password_incorrect_email_returns_400(
     client,
     data,
@@ -412,7 +412,7 @@ def test_reset_password_incorrect_email_returns_400(
     assert r.json() == {"detail": "Incorrect email or username"}
 
 
-@pytest.mark.usefixtures("sqlite_db")
+@pytest.mark.usefixtures("mysql_db")
 def test_reset_password_incorrect_username_returns_400(
     client,
     data,
