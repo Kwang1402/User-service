@@ -84,7 +84,7 @@ def cleanup_database(engine):
         conn.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
 
         for table in reversed(meta.sorted_tables):
-            conn.execute(text(f'TRUNCATE TABLE {table.name}'))
+            conn.execute(text(f"TRUNCATE TABLE {table.name}"))
 
         # Enable foreign key checks
         conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))

@@ -26,6 +26,7 @@ engine = create_engine(config.get_mysql_uri())
 users = Table(
     "users",
     metadata,
+    Column("message_id", String(255)),
     Column("id", String(255), primary_key=True),
     Column("username", String(255)),
     Column("email", String(255), unique=True),
@@ -40,6 +41,7 @@ users = Table(
 profiles = Table(
     "profiles",
     metadata,
+    Column("message_id", String(255)),
     Column("id", String(255), primary_key=True),
     Column("user_id", String(255), ForeignKey("users.id"), nullable=False),
     Column("backup_email", String(255)),

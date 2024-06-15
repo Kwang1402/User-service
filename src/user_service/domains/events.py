@@ -1,14 +1,13 @@
-import dataclasses
 from datetime import date
+from user_service.domains import Message
 
 
-class Event:
+class Event(Message):
     pass
 
 
-@dataclasses.dataclass
-class Registered(Event):
+class RegisteredEvent(Event):
     user_id: str
-    backup_email: str
-    gender: str
-    date_of_birth: date
+    backup_email: str | None = None
+    gender: str | None = None
+    date_of_birth: date | None = None

@@ -4,11 +4,12 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from user_service.domains import commands
 from ..dependencies import bus, create_access_token
-from ..schemas import Token
+from user_service.entrypoints import schemas
 from user_service.service_layer.handlers import (
     IncorrectCredentials,
     TwoFactorAuthNotEnabled,
 )
+from user_service import views
 
 router = APIRouter()
 
@@ -23,7 +24,7 @@ router = APIRouter()
                 "application/json": {
                     "example": {
                         "user_id": "string",
-                        "token": {"access_token": "string", "token_type": "str"},
+                        "token": {"access_token": "string", "token_type": "string"},
                     }
                 }
             }
@@ -36,9 +37,12 @@ router = APIRouter()
 )
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     try:
-        cmd = commands.LoginCommand(form_data.username, form_data.password)
-        results = bus.handle(cmd)
-        user_id = results[0]
+        body = schemas.LoginSchema(
+            email=form_data.username, password=form_data.password
+        )
+        cmd = commands.LoginCommand(**body.model_dump())
+        bus.handle(cmd)
+        user = views.fetch_model_from_database(cmd._id, "users", bus.uow)
 
     except IncorrectCredentials as e:
         raise HTTPException(
@@ -52,12 +56,14 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
             url=f"/user/{e.args[0]}/enable-2fa",
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
         )
-    access_token = create_access_token(data={"sub": user_id})
+    access_token = create_access_token(data={"sub": user["id"]})
 
     return JSONResponse(
         content={
-            "user_id": user_id,
-            "token": Token(access_token=access_token, token_type="bearer").model_dump(),
+            "user_id": user["id"],
+            "token": schemas.Token(
+                access_token=access_token, token_type="bearer"
+            ).model_dump(),
         },
         status_code=status.HTTP_200_OK,
     )

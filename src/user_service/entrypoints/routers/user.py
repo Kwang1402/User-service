@@ -7,9 +7,10 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from user_service.domains import commands
 from ..dependencies import bus
-from ..schemas import VerifyEnableTwoFactorAuthRequest
+from user_service.entrypoints import schemas
 from user_service.service_layer.handlers import IncorrectCredentials, InvalidOTP
 from user_service.config import SECRET_KEY
+from user_service import views
 
 router = APIRouter()
 
@@ -46,18 +47,19 @@ async def get_user(user_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    try:
-        cmd = commands.GetUserCommand(user_id)
-        results = bus.handle(cmd)
-        user = results[0]
-    except IncorrectCredentials as e:
+    user = views.fetch_model_from_database(user_id, "users", bus.uow)
+    print(user)
+
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
+            detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    return JSONResponse(content={"user": user}, status_code=status.HTTP_200_OK)
+    return JSONResponse(
+        content={"user": {"username": user["username"], "email": user["email"]}},
+        status_code=status.HTTP_200_OK,
+    )
 
 
 @router.post(
@@ -66,21 +68,16 @@ async def get_user(user_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
     summary="Send OTP code to enable 2FA",
     responses={
         status.HTTP_202_ACCEPTED: {
-            "content": {
-                "application/json": {
-                    "example": {"user_id": "string", "otp_code": "string"}
-                }
-            }
+            "content": {"application/json": {"example": {"user_id": "string"}}}
         },
     },
 )
 async def enable_two_factor_auth(user_id: str):
-    cmd = commands.EnableTwoFactorAuthCommand(user_id)
-    results = bus.handle(cmd)
-    otp_code = results[0]
+    cmd = commands.EnableTwoFactorAuthCommand(user_id=user_id)
+    bus.handle(cmd)
 
     return JSONResponse(
-        content={"user_id": user_id, "otp_code": otp_code},
+        content={"user_id": user_id},
         status_code=status.HTTP_202_ACCEPTED,
     )
 
@@ -105,10 +102,12 @@ async def enable_two_factor_auth(user_id: str):
     },
 )
 async def verify_enable_two_factor_auth(
-    user_id: str, body: VerifyEnableTwoFactorAuthRequest
+    user_id: str, body: schemas.VerifyEnableTwoFactorAuthSchema
 ):
     try:
-        cmd = commands.VerifyEnableTwoFactorAuthCommand(user_id, **body.model_dump())
+        cmd = commands.VerifyEnableTwoFactorAuthCommand(
+            user_id=user_id, **body.model_dump()
+        )
         bus.handle(cmd)
 
     except (IncorrectCredentials, InvalidOTP) as e:

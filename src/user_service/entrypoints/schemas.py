@@ -2,7 +2,7 @@ import pydantic
 from datetime import date
 
 
-class RegisterRequest(pydantic.BaseModel):
+class RegisterSchema(pydantic.BaseModel):
     username: str
     email: str
     password: str
@@ -11,13 +11,22 @@ class RegisterRequest(pydantic.BaseModel):
     date_of_birth: date | None = None
 
 
-class ResetPasswordRequest(pydantic.BaseModel):
+class EnableTwoFactorAuthSchema(pydantic.BaseModel):
+    pass
+
+
+class VerifyEnableTwoFactorAuthSchema(pydantic.BaseModel):
+    otp_code: str
+
+
+class LoginSchema(pydantic.BaseModel):
+    email: str
+    password: str
+
+
+class ResetPasswordSchema(pydantic.BaseModel):
     email: str
     username: str
-
-
-class VerifyEnableTwoFactorAuthRequest(pydantic.BaseModel):
-    otp_code: str
 
 
 class Token(pydantic.BaseModel):

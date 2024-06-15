@@ -7,3 +7,6 @@ __pycache__/
 
 # sqlite
 user_service.db
+
+# mock emails
+mock_emails/

@@ -53,22 +53,34 @@ def register(
         hashed_password = pwd_context.hash(cmd.password)
         secret_token = pyotp.random_base32()
 
-        user = models.User(cmd.username, cmd.email, hashed_password, secret_token)
+        user = models.User(
+            cmd._id, cmd.username, cmd.email, hashed_password, secret_token
+        )
         uow.repo.add(user)
+
         user.events.append(
-            events.Registered(user.id, cmd.backup_email, cmd.gender, cmd.date_of_birth)
+            events.RegisteredEvent(
+                user_id=user.id,
+                backup_email=cmd.backup_email,
+                gender=cmd.gender,
+                date_of_birth=cmd.date_of_birth,
+            )
         )
 
         uow.commit()
 
 
 def create_user_profile(
-    event: events.Registered,
+    event: events.RegisteredEvent,
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
         profile = models.Profile(
-            event.user_id, event.backup_email, event.gender, event.date_of_birth
+            event._id,
+            event.user_id,
+            event.backup_email,
+            event.gender,
+            event.date_of_birth,
         )
         uow.repo.add(profile)
 
@@ -82,7 +94,10 @@ def enable_two_factor_auth(
     with uow:
         user = uow.repo.get(models.User, id=cmd.user_id)
         otp_code = pyotp.TOTP(user.secret_token).now()
-        return otp_code
+        email_address = f"mock_emails/{user.email}.txt"
+
+    with open(email_address, "a") as file:
+        file.write(f"{otp_code}\n")
 
 
 def verify_enable_two_factor_auth(
@@ -106,25 +121,16 @@ def login(
 ):
     with uow:
         user = uow.repo.get(models.User, email=cmd.email)
+
         if user is None or not pwd_context.verify(cmd.password, user.password):
             raise IncorrectCredentials("Incorrect email or password")
+
+        user.message_id = cmd._id
 
         if not user.two_factor_auth_enabled:
             raise TwoFactorAuthNotEnabled(user.id)
 
-        return user.id
-
-
-def get_user(
-    cmd: commands.GetUserCommand,
-    uow: unit_of_work.AbstractUnitOfWork,
-):
-    with uow:
-        user = uow.repo.get(models.User, id=cmd.user_id)
-        if user is None:
-            raise IncorrectCredentials("Could not validate credentials")
-
-        return {"username": user.username, "email": user.email}
+        uow.commit()
 
 
 def reset_password(
@@ -135,17 +141,20 @@ def reset_password(
         user = uow.repo.get(models.User, email=cmd.email)
         if user is None or user.username != cmd.username:
             raise IncorrectCredentials("Incorrect email or username")
+
         new_password = random_valid_password()
         new_hashed_password = pwd_context.hash(new_password)
         user.change_password(new_hashed_password)
+        email_address = f"mock_emails/{user.email}.txt"
 
         uow.commit()
 
-    return new_password
+    with open(email_address, "a") as file:
+        file.write(f"{new_password}\n")
 
 
 EVENT_HANDLERS = {
-    events.Registered: [create_user_profile],
+    events.RegisteredEvent: [create_user_profile],
 }  # type: Dict[Type[events.Event], List[Callable]]
 
 COMMAND_HANDLERS = {
@@ -153,6 +162,5 @@ COMMAND_HANDLERS = {
     commands.EnableTwoFactorAuthCommand: enable_two_factor_auth,
     commands.VerifyEnableTwoFactorAuthCommand: verify_enable_two_factor_auth,
     commands.LoginCommand: login,
-    commands.GetUserCommand: get_user,
     commands.ResetPasswordCommand: reset_password,
 }  # type: Dict[Type[commands.Command], Callable]

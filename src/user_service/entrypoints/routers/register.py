@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from user_service.domains import commands
 from ..dependencies import validate_password, InvalidPassword, bus
 from user_service.service_layer.handlers import EmailExisted
-from ..schemas import RegisterRequest
+from user_service.entrypoints import schemas
 
 router = APIRouter()
 
@@ -29,7 +29,7 @@ router = APIRouter()
         },
     },
 )
-async def register(body: RegisterRequest):
+async def register(body: schemas.RegisterSchema):
     try:
         validate_password(body.password)
     except InvalidPassword as e:

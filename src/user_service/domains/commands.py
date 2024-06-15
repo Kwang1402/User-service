@@ -1,44 +1,28 @@
-import dataclasses
-from datetime import date
+from user_service.domains import Message
+from user_service.entrypoints import schemas
 
 
-class Command:
+class Command(Message):
     pass
 
 
-@dataclasses.dataclass
-class RegisterCommand(Command):
-    username: str
-    email: str
-    password: str
-    backup_email: str | None = None
-    gender: str | None = None
-    date_of_birth: date | None = None
+class RegisterCommand(Command, schemas.RegisterSchema):
+    pass
 
 
-@dataclasses.dataclass
-class EnableTwoFactorAuthCommand(Command):
+class EnableTwoFactorAuthCommand(Command, schemas.EnableTwoFactorAuthSchema):
     user_id: str
 
 
-@dataclasses.dataclass
-class VerifyEnableTwoFactorAuthCommand(Command):
-    user_id: str
-    otp_code: str
-
-
-@dataclasses.dataclass
-class LoginCommand(Command):
-    email: str
-    password: str
-
-
-@dataclasses.dataclass
-class GetUserCommand(Command):
+class VerifyEnableTwoFactorAuthCommand(
+    Command, schemas.VerifyEnableTwoFactorAuthSchema
+):
     user_id: str
 
 
-@dataclasses.dataclass
-class ResetPasswordCommand(Command):
-    email: str
-    username: str
+class LoginCommand(Command, schemas.LoginSchema):
+    pass
+
+
+class ResetPasswordCommand(Command, schemas.ResetPasswordSchema):
+    pass

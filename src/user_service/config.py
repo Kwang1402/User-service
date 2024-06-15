@@ -1,5 +1,3 @@
-import sqlalchemy
-
 SECRET_KEY = "sample_user_service_secret_key"
 
 

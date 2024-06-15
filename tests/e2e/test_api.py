@@ -1,5 +1,6 @@
 import pytest
 from tests import random_refs
+from pathlib import Path
 from fastapi import status
 import jwt
 import pyotp
@@ -108,7 +109,6 @@ def test_login_two_factor_auth_not_enabled_returns_202(
     print(r.__dict__)
     assert r.status_code == status.HTTP_202_ACCEPTED
     assert "user_id" in r.json()
-    assert "otp_code" in r.json()
 
 
 @pytest.mark.usefixtures("mysql_db")
@@ -122,7 +122,11 @@ def test_login_and_verify_enable_two_factor_auth_successfully_returns_200(
         "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
-    otp_code = r.json()["otp_code"]
+
+    email = data["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
 
     # act
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
@@ -166,7 +170,11 @@ def test_login_and_verify_enable_two_factor_auth_expired_otp_code_returns_400(
         "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
-    otp_code = r.json()["otp_code"]
+
+    email = data["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
     time.sleep(30)
 
     # act
@@ -189,7 +197,12 @@ def test_logged_in_successfully_returns_200(
         "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
-    otp_code = r.json()["otp_code"]
+
+    email = data["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
+
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
 
     # act
@@ -255,7 +268,12 @@ def test_get_user_successfully_returns_200(
         "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
-    otp_code = r.json()["otp_code"]
+
+    email = data["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
+
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
     r = client.post(
         "/login", data={"username": data["email"], "password": data["password"]}
@@ -285,7 +303,12 @@ def test_get_user_missing_token_returns_401(
         "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
-    otp_code = r.json()["otp_code"]
+
+    email = data["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
+
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
     r = client.post(
         "/login", data={"username": data["email"], "password": data["password"]}
@@ -312,7 +335,12 @@ def test_get_user_invalid_token_returns_401(
         "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
-    otp_code = r.json()["otp_code"]
+
+    email = data["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
+
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
     r = client.post(
         "/login", data={"username": data["email"], "password": data["password"]}
@@ -347,7 +375,12 @@ def test_get_user_unmatching_user_id_returns_401(
         "/login", data={"username": data["email"], "password": data["password"]}
     )
     user_id = r.json()["user_id"]
-    otp_code = r.json()["otp_code"]
+
+    email = data["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
+
     r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
 
     r = client.post("/register", json=data2)
@@ -355,7 +388,11 @@ def test_get_user_unmatching_user_id_returns_401(
         "/login", data={"username": data2["email"], "password": data2["password"]}
     )
     user2_id = r.json()["user_id"]
-    otp_code = r.json()["otp_code"]
+    email = data2["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
+
     r = client.patch(f"/user/{user2_id}/verify-enable-2fa", json={"otp_code": otp_code})
 
     r = client.post(
@@ -388,10 +425,15 @@ def test_reset_password_successfully_returns_200(
         "/reset-password", json={"email": data["email"], "username": data["username"]}
     )
 
+    email = data["email"]
+    new_password_file_path = Path(f"mock_emails/{email}.txt")
+    with new_password_file_path.open("r") as new_password_file:
+        new_password = new_password_file.read().strip()
+
     # assert
     print(r.__dict__)
     assert r.status_code == status.HTTP_200_OK
-    assert "new_password" in r.json()
+    assert new_password is not None
 
 
 @pytest.mark.usefixtures("mysql_db")
