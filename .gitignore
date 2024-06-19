@@ -4,3 +4,6 @@ venv/
 # pycache
 __pycache__/
 .pytest_cache/
+
+# sqlite
+user_service.db

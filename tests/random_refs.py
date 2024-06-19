@@ -1,7 +1,6 @@
 import uuid
 import random
 import string
-import pytest
 
 
 def random_username(name=""):
