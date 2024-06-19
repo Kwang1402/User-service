@@ -26,3 +26,15 @@ class LoginCommand(Command, schemas.LoginSchema):
 
 class ResetPasswordCommand(Command, schemas.ResetPasswordSchema):
     pass
+
+
+class AddFriendCommand(Command, schemas.AddFriendSchema):
+    sender_id: str
+
+
+class AcceptFriendRequestCommand(Command, schemas.AcceptFriendRequestSchema):
+    pass
+
+
+class DeclineFriendRequestCommand(Command, schemas.DeclineFriendRequestSchema):
+    pass

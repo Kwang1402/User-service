@@ -17,6 +17,10 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
+class UserNotFound(Exception):
+    pass
+
+
 @router.get(
     "/user/{user_id}",
     tags=["users"],
@@ -47,8 +51,7 @@ async def get_user(user_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = views.fetch_model_from_database(user_id, "users", bus.uow)
-    print(user)
+    user = views.fetch_models_from_database(f"id = '{user_id}'", "users", bus.uow)[0]
 
     if not user:
         raise HTTPException(
@@ -115,5 +118,28 @@ async def verify_enable_two_factor_auth(
 
     return JSONResponse(
         content={"message": "Two-Factor Authentication successfully enabled"},
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@router.get("/user/profile/{username}")
+async def get_user_profile(username: str):
+    try:
+        user = views.fetch_models_from_database(
+            "users", f"username = '{username}'", bus.uow
+        )[0]
+        if user is None:
+            raise UserNotFound("User not found")
+        user_profile = views.fetch_models_from_database(
+            "profiles", f"user_id = '{user['id']}'", bus.uow
+        )[0]
+    except UserNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    
+    user_profile["created_time"] = str(user_profile["created_time"])
+    user_profile["updated_time"] = str(user_profile["updated_time"])
+    
+    return JSONResponse(
+        content=user_profile,
         status_code=status.HTTP_200_OK,
     )

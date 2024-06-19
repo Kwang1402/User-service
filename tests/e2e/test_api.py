@@ -472,3 +472,116 @@ def test_reset_password_incorrect_username_returns_400(
     print(r.__dict__)
     assert r.status_code == status.HTTP_400_BAD_REQUEST
     assert r.json() == {"detail": "Incorrect email or username"}
+
+
+@pytest.mark.usefixtures("mysql_db")
+def test_get_user_profile(
+    client,
+    data,
+):
+    # arrange
+    r = client.post("/register", json=data)
+
+    # act
+    r = client.get(f"/user/profile/{data['username']}")
+
+    # assert
+    print(r.__dict__)
+    assert r.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.usefixtures("mysql_db")
+def test_add_friend_successfully_returns_201(
+    client,
+    data,
+    data2,
+):
+    # arrange
+    r = client.post("/register", json=data)
+    r = client.post(
+        "/login", data={"username": data["email"], "password": data["password"]}
+    )
+    user_id = r.json()["user_id"]
+
+    email = data["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
+
+    r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
+    r = client.post(
+        "/login", data={"username": data["email"], "password": data["password"]}
+    )
+    user_id = r.json()["user_id"]
+    token = r.json()["token"]
+
+    r = client.post("/register", json=data2)
+
+    r = client.get(f"/user/profile/{data2['username']}")
+
+    user2_id = r.json()["user_id"]
+
+    # act
+    r = client.post("/add-friend", json={"receiver_id": user2_id}, headers={"Authorization": f"Bearer {token['access_token']}"})
+
+    # assert
+    print(r.__dict__)
+    assert r.status_code == status.HTTP_201_CREATED
+    assert r.json() == {"message": "Friend request sent"}
+
+@pytest.mark.usefixtures("mysql_db")
+def test_get_friend_requests_successfully_returns_200(
+    client,
+    data,
+    data2,
+):
+    # arrange
+    r = client.post("/register", json=data)
+    r = client.post(
+        "/login", data={"username": data["email"], "password": data["password"]}
+    )
+    user_id = r.json()["user_id"]
+
+    email = data["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
+
+    r = client.patch(f"/user/{user_id}/verify-enable-2fa", json={"otp_code": otp_code})
+    r = client.post(
+        "/login", data={"username": data["email"], "password": data["password"]}
+    )
+    user_id = r.json()["user_id"]
+    token = r.json()["token"]
+
+    r = client.post("/register", json=data2)
+    r = client.post(
+        "/login", data={"username": data2["email"], "password": data2["password"]}
+    )
+
+    user2_id = r.json()["user_id"]
+
+
+    email = data2["email"]
+    otp_file_path = Path(f"mock_emails/{email}.txt")
+    with otp_file_path.open("r") as otp_file:
+        otp_code = otp_file.read().strip()
+
+    r = client.patch(f"/user/{user2_id}/verify-enable-2fa", json={"otp_code": otp_code})
+    r = client.post(
+        "/login", data={"username": data["email"], "password": data["password"]}
+    )
+    user2_id = r.json()["user_id"]
+    token_2 = r.json()["token"]
+
+    r = client.get(f"/user/profile/{data2['username']}")
+    r = client.post("/add-friend", json={"receiver_id": user2_id}, headers={"Authorization": f"Bearer {token['access_token']}"})
+    
+    # act
+    r = client.get(f"/friend-requests", headers={"Authorization": f"Bearer {token_2['access_token']}"})
+
+    # assert
+    print(r.__dict__)
+    assert r.status_code == status.HTTP_200_OK
+    assert r.json()[0]["sender_id"] == user_id
+    assert r.json()[0]["receiver_id"] == user2_id

@@ -5,6 +5,7 @@ from sqlalchemy import (
     MetaData,
     Column,
     String,
+    Integer,
     Boolean,
     Date,
     TIMESTAMP,
@@ -28,7 +29,7 @@ users = Table(
     metadata,
     Column("message_id", String(255)),
     Column("id", String(255), primary_key=True),
-    Column("username", String(255)),
+    Column("username", String(255), unique=True),
     Column("email", String(255), unique=True),
     Column("password", String(255)),
     Column("secret_token", String(255), unique=True),
@@ -44,9 +45,36 @@ profiles = Table(
     Column("message_id", String(255)),
     Column("id", String(255), primary_key=True),
     Column("user_id", String(255), ForeignKey("users.id"), nullable=False),
+    Column("first_name", String(255)),
+    Column("last_name", String(255)),
     Column("backup_email", String(255)),
     Column("gender", String(255)),
     Column("date_of_birth", Date),
+    Column("followers", Integer),
+    Column("friends", Integer),
+    Column("created_time", TIMESTAMP),
+    Column("updated_time", TIMESTAMP),
+)
+
+friend_requests = Table(
+    "friend_requests",
+    metadata,
+    Column("message_id", String(255)),
+    Column("id", String(255), primary_key=True),
+    Column("sender_id", String(255)),
+    Column("receiver_id", String(255)),
+    Column("status", String(255)),
+    Column("created_time", TIMESTAMP),
+    Column("updated_time", TIMESTAMP),
+)
+
+friends = Table(
+    "friends",
+    metadata,
+    Column("message_id", String(255)),
+    Column("id", String(255), primary_key=True),
+    Column("sender_id", String(255)),
+    Column("receiver_id", String(255)),
     Column("created_time", TIMESTAMP),
     Column("updated_time", TIMESTAMP),
 )
@@ -62,6 +90,7 @@ def start_mappers():
         },
     )
     mapper_registry.map_imperatively(models.Profile, profiles)
+    mapper_registry.map_imperatively(models.FriendRequest, friend_requests)
     mapper_registry.metadata.create_all(bind=engine)
 
 

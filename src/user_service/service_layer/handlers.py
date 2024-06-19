@@ -1,12 +1,17 @@
 from typing import List, Dict, Callable, Type
 import string
 import random
+from datetime import datetime
 from user_service.domains import commands, events, models
 from user_service.service_layer import unit_of_work
 from passlib.context import CryptContext
 import pyotp
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+class UsernameExisted(Exception):
+    pass
 
 
 class EmailExisted(Exception):
@@ -49,6 +54,9 @@ def register(
         user = uow.repo.get(models.User, email=cmd.email)
         if user:
             raise EmailExisted(f"Email {cmd.email} already existed")
+        user = uow.repo.get(models.User, username=cmd.username)
+        if user:
+            raise UsernameExisted(f"Username {cmd.username} already existed")
 
         hashed_password = pwd_context.hash(cmd.password)
         secret_token = pyotp.random_base32()
@@ -61,6 +69,8 @@ def register(
         user.events.append(
             events.RegisteredEvent(
                 user_id=user.id,
+                first_name=cmd.first_name,
+                last_name=cmd.last_name,
                 backup_email=cmd.backup_email,
                 gender=cmd.gender,
                 date_of_birth=cmd.date_of_birth,
@@ -76,11 +86,8 @@ def create_user_profile(
 ):
     with uow:
         profile = models.Profile(
-            event._id,
-            event.user_id,
-            event.backup_email,
-            event.gender,
-            event.date_of_birth,
+            message_id=event._id,
+            **event.model_dump(),
         )
         uow.repo.add(profile)
 
@@ -153,8 +160,65 @@ def reset_password(
         file.write(f"{new_password}\n")
 
 
+def add_friend(
+    cmd: commands.AddFriendCommand,
+    uow: unit_of_work.AbstractUnitOfWork,
+):
+    with uow:
+        friend_request = models.FriendRequest(cmd._id, cmd.sender_id, cmd.receiver_id)
+        uow.repo.add(friend_request)
+
+        uow.commit()
+
+
+def accept_friend_request(
+    cmd: commands.AcceptFriendRequestCommand,
+    uow: unit_of_work.AbstractUnitOfWork,
+):
+    with uow:
+        friend_request = uow.repo.get(models.FriendRequest, id=cmd.friend_request_id)
+        friend_request.status = "Accepted"
+        friend_request.updated_time = datetime.now()
+
+        friend_request.events.append(
+            events.AcceptedFriendRequestEvent(sender_id=friend_request.sender_id, receiver_id=friend_request.receiver_id)
+        )
+
+        uow.commit()
+
+
+def decline_friend_request(
+    cmd: commands.DeclineFriendRequestCommand,
+    uow: unit_of_work.AbstractUnitOfWork,
+):
+    with uow:
+        friend_request = uow.repo.get(models.FriendRequest, id=cmd.friend_request_id)
+        friend_request.status = "Declined"
+        friend_request.updated_time = datetime.now()
+
+        uow.commit()
+
+def add_to_friend_list(
+    event: events.AcceptedFriendRequestEvent,
+    uow: unit_of_work.AbstractUnitOfWork,
+):
+    with uow:
+        friend = models.Friend(event._id, event.sender_id, event.receiver_id)
+        uow.repo.add(friend)
+
+        sender_profile = uow.repo.get(models.Profile, user_id=event.sender_id)
+        sender_profile.friends += 1
+        sender_profile.updated_time = datetime.now()
+        
+        receiver_profile = uow.repo.get(models.Profile, user_id=event.receiver_id)
+        receiver_profile.friends += 1
+        receiver_profile.updated_time = datetime.now()
+
+        uow.commit()
+
 EVENT_HANDLERS = {
     events.RegisteredEvent: [create_user_profile],
+    events.AcceptedFriendRequestEvent: [add_to_friend_list],
 }  # type: Dict[Type[events.Event], List[Callable]]
 
 COMMAND_HANDLERS = {
@@ -163,4 +227,6 @@ COMMAND_HANDLERS = {
     commands.VerifyEnableTwoFactorAuthCommand: verify_enable_two_factor_auth,
     commands.LoginCommand: login,
     commands.ResetPasswordCommand: reset_password,
+    commands.AddFriendCommand: add_friend,
+    commands.AcceptFriendRequestCommand: accept_friend_request,
 }  # type: Dict[Type[commands.Command], Callable]

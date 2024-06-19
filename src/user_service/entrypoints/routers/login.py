@@ -42,7 +42,9 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
         )
         cmd = commands.LoginCommand(**body.model_dump())
         bus.handle(cmd)
-        user = views.fetch_model_from_database(cmd._id, "users", bus.uow)
+        user = views.fetch_models_from_database(
+            "users", f"message_id = '{cmd._id}'", bus.uow
+        )[0]
 
     except IncorrectCredentials as e:
         raise HTTPException(
