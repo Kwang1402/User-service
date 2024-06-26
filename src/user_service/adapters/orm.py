@@ -1,4 +1,5 @@
 import logging
+
 from sqlalchemy import (
     create_engine,
     Table,
@@ -13,7 +14,6 @@ from sqlalchemy import (
     event,
 )
 from sqlalchemy.orm import registry, relationship
-
 
 from user_service.domains import models
 from user_service import config
@@ -79,8 +79,14 @@ friends = Table(
     Column("updated_time", TIMESTAMP),
 )
 
+_mappers_initialized = False
+
 
 def start_mappers():
+    global _mappers_initialized
+    if _mappers_initialized:
+        return
+
     logger.info("Starting mappers")
     mapper_registry.map_imperatively(
         models.User,
@@ -91,7 +97,10 @@ def start_mappers():
     )
     mapper_registry.map_imperatively(models.Profile, profiles)
     mapper_registry.map_imperatively(models.FriendRequest, friend_requests)
+    mapper_registry.map_imperatively(models.Friend, friends)
     mapper_registry.metadata.create_all(bind=engine)
+
+    _mappers_initialized = True
 
 
 @event.listens_for(models.User, "load")

@@ -1,4 +1,6 @@
+from typing import Optional
 from datetime import date
+
 from user_service.domains import Message
 
 
@@ -8,11 +10,11 @@ class Event(Message):
 
 class RegisteredEvent(Event):
     user_id: str
-    first_name: str | None = None
-    last_name: str | None = None
-    backup_email: str | None = None
-    gender: str | None = None
-    date_of_birth: date | None = None
+    first_name: Optional[str]
+    last_name: Optional[str]
+    backup_email: Optional[str]
+    gender: Optional[str]
+    date_of_birth: Optional[date]
 
 
 class AcceptedFriendRequestEvent(Event):

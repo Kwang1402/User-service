@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from src.user_service.adapters.orm import start_mappers, metadata
 from src.user_service import config
-from user_service.entrypoints.fastapi_app import app
+from user_service.entrypoints.rest.fastapi_app import app
 from tests import random_refs
 
 
@@ -90,7 +90,7 @@ def cleanup_database(engine):
         conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def mysql_db():
     engine = create_engine(config.get_mysql_uri(), isolation_level="SERIALIZABLE")
     wait_for_mysql(engine)

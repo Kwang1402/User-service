@@ -522,12 +522,17 @@ def test_add_friend_successfully_returns_201(
     user2_id = r.json()["user_id"]
 
     # act
-    r = client.post("/add-friend", json={"receiver_id": user2_id}, headers={"Authorization": f"Bearer {token['access_token']}"})
+    r = client.post(
+        "/add-friend",
+        json={"receiver_id": user2_id},
+        headers={"Authorization": f"Bearer {token['access_token']}"},
+    )
 
     # assert
     print(r.__dict__)
     assert r.status_code == status.HTTP_201_CREATED
     assert r.json() == {"message": "Friend request sent"}
+
 
 @pytest.mark.usefixtures("mysql_db")
 def test_get_friend_requests_successfully_returns_200(
@@ -561,7 +566,6 @@ def test_get_friend_requests_successfully_returns_200(
 
     user2_id = r.json()["user_id"]
 
-
     email = data2["email"]
     otp_file_path = Path(f"mock_emails/{email}.txt")
     with otp_file_path.open("r") as otp_file:
@@ -575,10 +579,17 @@ def test_get_friend_requests_successfully_returns_200(
     token_2 = r.json()["token"]
 
     r = client.get(f"/user/profile/{data2['username']}")
-    r = client.post("/add-friend", json={"receiver_id": user2_id}, headers={"Authorization": f"Bearer {token['access_token']}"})
-    
+    r = client.post(
+        "/add-friend",
+        json={"receiver_id": user2_id},
+        headers={"Authorization": f"Bearer {token['access_token']}"},
+    )
+
     # act
-    r = client.get(f"/friend-requests", headers={"Authorization": f"Bearer {token_2['access_token']}"})
+    r = client.get(
+        f"/friend-requests",
+        headers={"Authorization": f"Bearer {token_2['access_token']}"},
+    )
 
     # assert
     print(r.__dict__)

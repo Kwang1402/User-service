@@ -1,18 +1,15 @@
-from sqlalchemy.sql import text
+from typing import Type, List
+
+from user_service.domains import models
 from user_service.service_layer import unit_of_work
 
 
 def fetch_models_from_database(
-    table: str, condition: str, uow: unit_of_work.SqlAlchemyUnitOfWork
-):
+    model_type: Type[models.BaseModel],
+    uow: unit_of_work.SqlAlchemyUnitOfWork,
+    *args,
+    **kwargs
+) -> List[models.BaseModel]:
     with uow:
-        sql = text(
-            f"""
-            SELECT * FROM {table} 
-            WHERE {condition}
-            """
-        )
-
-        results = uow.session.execute(sql).mappings().all()
-    
-    return [dict(result) for result in results] if results else []
+        results = uow.repo.get(model_type=model_type, *args, **kwargs)
+        return results if results else []

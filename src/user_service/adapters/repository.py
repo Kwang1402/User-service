@@ -1,5 +1,6 @@
 import abc
-from typing import Type
+from typing import Type, List
+
 from user_service.domains import models
 
 
@@ -16,11 +17,12 @@ class AbstractRepository(abc.ABC):
         model_type: Type[models.BaseModel],
         *args,
         **kwargs,
-    ) -> models.BaseModel:
-        model = self._get(model_type, *args, **kwargs)
-        if model:
-            self.seen.add(model)
-        return model
+    ) -> List[models.BaseModel]:
+        results = self._get(model_type, *args, **kwargs)
+        if results:
+            for result in results:
+                self.seen.add(result) 
+        return results
 
     @abc.abstractmethod
     def _add(
@@ -37,7 +39,7 @@ class AbstractRepository(abc.ABC):
         model_type: Type[models.BaseModel],
         *args,
         **kwargs,
-    ) -> models.BaseModel:
+    ) -> List[models.BaseModel]:
         raise NotImplementedError
 
 
@@ -54,5 +56,5 @@ class SqlAlchemyRepository(AbstractRepository):
         model_type: Type[models.BaseModel],
         *args,
         **kwargs,
-    ) -> models.BaseModel:
-        return self.session.query(model_type).filter_by(**kwargs).one_or_none()
+    ) -> List[models.BaseModel]:
+        return self.session.query(model_type).filter_by(**kwargs).all()
