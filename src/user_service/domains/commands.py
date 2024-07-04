@@ -1,8 +1,3 @@
-from typing import Annotated
-
-from fastapi import Depends
-from fastapi.security import OAuth2PasswordRequestForm
-
 from user_service.domains import Message
 from user_service.entrypoints.schemas import (
     friend_schemas,
@@ -28,8 +23,9 @@ class VerifyTwoFactorAuthCommand(Command, user_schemas.VerifyTwoFactorAuthBase):
     """"""
 
 
-class LoginCommand(Command, Annotated[OAuth2PasswordRequestForm, Depends()]):
-    """"""
+class LoginCommand(Command):
+    username: str
+    password: str
 
 
 class ResetPasswordCommand(Command, reset_password_schemas.ResetPasswordBase):

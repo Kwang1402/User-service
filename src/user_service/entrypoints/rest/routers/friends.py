@@ -40,7 +40,10 @@ async def get_friend_requests(
     current_user: Annotated[models.User, Depends(dependencies.get_current_unlock_user)]
 ):
     friend_requests = views.fetch_models_from_database(
-        model_type=models.FriendRequest, uow=bus.uow, receiver_id=current_user.id, status="Pending"
+        model_type=models.FriendRequest,
+        uow=bus.uow,
+        receiver_id=current_user.id,
+        status="Pending",
     )
 
     # create a seperate schema

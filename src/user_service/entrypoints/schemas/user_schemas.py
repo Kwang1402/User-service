@@ -46,33 +46,10 @@ class ProfileReponse(pydantic.BaseModel):
 
 
 class SetupTwoFactorAuthBase(pydantic.BaseModel):
-    username: str
-
-
-class SetupTwoFactorAuthSchema(SetupTwoFactorAuthBase):
-    model_config = pydantic.ConfigDict(from_attributes=True, extra="allow")
-
-    message: str
-
-
-class SetupTwoFactorAuthResponse(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(from_attributes=True)
-
-    setup_two_factor_auth: SetupTwoFactorAuthSchema
+    user_id: str
 
 
 class VerifyTwoFactorAuthBase(pydantic.BaseModel):
-    username: str
+    user_id: str
     otp_code: str
-
-
-class VerifyTwoFactorAuthSchema(VerifyTwoFactorAuthBase):
-    model_config = pydantic.ConfigDict(from_attributes=True, extra="allow")
-
-    message: str
-
-
-class VerifyTwoFactorAuthResponse(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(from_attributes=True)
-
-    verify_two_factor_auth: VerifyTwoFactorAuthSchema
+    

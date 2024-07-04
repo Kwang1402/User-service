@@ -1,5 +1,6 @@
 import time
 from pathlib import Path
+from typing import Any, List, Generator
 
 import pytest
 import requests
@@ -14,31 +15,24 @@ from user_service.entrypoints.rest.fastapi_app import app
 from tests import random_refs
 
 
-@pytest.fixture
-def data():
-    yield {
+def create_request_body() -> dict[str, Any]:
+    return {
         "username": random_refs.random_username(),
         "email": random_refs.random_email(),
         "password": random_refs.random_valid_password(),
+        "first_name": None,
+        "last_name": None,
+        "backup_email": None,
+        "gender": None,
+        "date_of_birth": None,
     }
 
 
 @pytest.fixture
-def invalid_password_data():
-    yield {
-        "username": random_refs.random_username(),
-        "email": random_refs.random_email(),
-        "password": random_refs.random_invalid_password(),
-    }
-
-
-@pytest.fixture
-def data2():
-    yield {
-        "username": random_refs.random_username(),
-        "email": random_refs.random_email(),
-        "password": random_refs.random_valid_password(),
-    }
+def request_bodies(request) -> Generator[List[dict[str, Any]], Any, None]:
+    num_bodies = request.param
+    bodies = [create_request_body() for _ in range(num_bodies)]
+    yield bodies
 
 
 @pytest.fixture()

@@ -18,10 +18,12 @@ class AbstractRepository(abc.ABC):
         *args,
         **kwargs,
     ) -> List[models.BaseModel]:
+        # print("something")
         results = self._get(model_type, *args, **kwargs)
+        # print(results)
         if results:
             for result in results:
-                self.seen.add(result) 
+                self.seen.add(result)
         return results
 
     @abc.abstractmethod

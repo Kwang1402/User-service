@@ -9,7 +9,7 @@ def fetch_models_from_database(
     uow: unit_of_work.SqlAlchemyUnitOfWork,
     *args,
     **kwargs
-) -> List[models.BaseModel]:
+):
     with uow:
         results = uow.repo.get(model_type=model_type, *args, **kwargs)
-        return results if results else []
+        return [result.json for result in results] if results else []

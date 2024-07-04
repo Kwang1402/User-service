@@ -1,7 +1,7 @@
 from typing import Annotated
 
-from fastapi import Depends, APIRouter, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+import fastapi
+import fastapi.security
 
 from .. import dependencies
 from user_service import bootstrap
@@ -12,60 +12,50 @@ from user_service import views
 
 bus = bootstrap.bootstrap()
 
-router = APIRouter()
+router = fastapi.APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = fastapi.security.OAuth2PasswordBearer(tokenUrl="login")
 
 
 class UserNotFound(Exception):
     pass
 
 
-@router.get("/user", status_code=status.HTTP_200_OK)
+@router.get("/users/{id}", status_code=fastapi.status.HTTP_200_OK)
 async def get_user(
-    current_user: Annotated[models.User, Depends(dependencies.get_current_unlock_user)]
+    current_user: Annotated[models.User, fastapi.Depends(dependencies.get_current_unlock_user)]
 ):
     return current_user
 
 
 @router.post(
-    "/user/{username}/setup-2fa",
-    status_code=status.HTTP_202_ACCEPTED,
-    response_model=user_schemas.SetupTwoFactorAuthResponse,
+    "/users/{id}/setup-2fa",
+    status_code=fastapi.status.HTTP_202_ACCEPTED,
 )
-async def setup_two_factor_auth(cmd: commands.SetupTwoFactorAuthCommand):
+async def setup_two_factor_auth(id: str):
+    cmd = commands.SetupTwoFactorAuthCommand(user_id=id)
     bus.handle(cmd)
 
-    setup_two_factor_auth_response = user_schemas.SetupTwoFactorAuthSchema(
-        **cmd.model_dump(), message="OTP code sent"
-    )
-    return user_schemas.SetupTwoFactorAuthResponse(
-        setup_two_factor_auth=setup_two_factor_auth_response
-    )
+    return fastapi.status.HTTP_202_ACCEPTED
 
 
 @router.patch(
-    "/user/{username}/verify-2fa",
-    status_code=status.HTTP_200_OK,
-    response_model=user_schemas.VerifyTwoFactorAuthResponse,
+    "/user/{id}/verify-2fa",
+    status_code=fastapi.status.HTTP_200_OK,
 )
-async def verify_two_factor_auth(cmd: commands.VerifyTwoFactorAuthCommand):
+async def verify_two_factor_auth(id: str, otp_code: str):
     try:
+        cmd = commands.VerifyTwoFactorAuthCommand(user_id=id, otp_code=otp_code)
         bus.handle(cmd)
 
     except InvalidOTP as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise fastapi.HTTPException(status_code=fastapi.status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    verify_enable_two_factor_auth_response = user_schemas.VerifyTwoFactorAuthSchema(
-        **cmd.model_dump(), message="Two factor authentication enabled"
-    )
-    return user_schemas.VerifyTwoFactorAuthResponse(
-        verify_two_factor_auth=verify_enable_two_factor_auth_response
-    )
+    return fastapi.status.HTTP_200_OK
 
 
 @router.get(
-    "/user/{username}", status_code=status.HTTP_200_OK, response_model=models.Profile
+    "/user-profiles/{id}", status_code=fastapi.status.HTTP_200_OK, response_model=models.Profile
 )
 async def get_user_profile(username: str):
     try:
@@ -78,6 +68,6 @@ async def get_user_profile(username: str):
             model_type=models.Profile, uow=bus.uow, user_id=user.id
         )[0]
     except UserNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise fastapi.HTTPException(status_code=fastapi.status.HTTP_404_NOT_FOUND, detail=str(e))
 
     return user_profile

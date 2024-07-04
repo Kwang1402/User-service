@@ -85,7 +85,7 @@ def setup_two_factor_auth(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
-        users = uow.repo.get(models.User, username=cmd.username)
+        users = uow.repo.get(models.User, id=cmd.user_id)
         user = users[0]
         otp_code = pyotp.TOTP(user.secret_token).now()
         email_address = f"mock_emails/{user.email}.txt"
@@ -99,7 +99,7 @@ def verify_two_factor_auth(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
-        users = uow.repo.get(models.User, username=cmd.username)
+        users = uow.repo.get(models.User, username=cmd.user_id)
         user = users[0]
 
         if not pyotp.TOTP(user.secret_token).verify(cmd.otp_code):
@@ -115,8 +115,11 @@ def login(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
-        users = uow.repo.get(models.User, email=cmd.email)
+        users = uow.repo.get(models.User, username=cmd.username)
 
+        if users is None:
+            users = uow.repo.get(models.User, email=cmd.username)
+        
         if users is None:
             raise IncorrectCredentials("Incorrect email or password")
 
@@ -126,8 +129,6 @@ def login(
 
         if not user.two_factor_auth_enabled:
             raise TwoFactorAuthNotEnabled(user.id)
-
-        uow.commit()
 
 
 def reset_password(
@@ -142,7 +143,7 @@ def reset_password(
         user = users[0]
         if user.username != cmd.username:
             raise IncorrectCredentials("Incorrect email or username")
-        
+
         new_password = random_valid_password()
         new_hashed_password = pwd_context.hash(new_password)
         user.change_password(new_hashed_password)
@@ -171,7 +172,7 @@ def accept_friend_request(
 ):
     with uow:
         friend_requests = uow.repo.get(models.FriendRequest, id=cmd.friend_request_id)
-        
+
         friend_request = friend_requests[0]
         friend_request.status = "Accepted"
         friend_request.updated_time = datetime.now()

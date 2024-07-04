@@ -16,6 +16,21 @@ class BaseModel:
         self.message_id = message_id
         self.events = []
 
+    _datetime_format: str = "%Y-%m-%d %H:%M:%S"
+
+    @property
+    def json(self):
+        """json."""
+        data = {
+            key: val for key, val in self.__dict__.items() if not key.startswith("_")
+        }
+        for attr, value in data.items():
+            if isinstance(value, datetime):
+                data[attr] = value.strftime(self._datetime_format)
+            if isinstance(value, set):
+                data[attr] = list(value)
+        return data
+
 
 class User(BaseModel):
     def __init__(

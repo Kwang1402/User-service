@@ -1,40 +1,76 @@
-from typing import Any, Generator
+from typing import Any, List
 
+import fastapi.testclient
 import pytest
-from fastapi import testclient, status
-
+import fastapi
+from icecream import ic
 from tests import random_refs
 
 
+@pytest.mark.usefixtures("request_bodies")
 class TestRegister:
-    @pytest.fixture
-    def request_body(self) -> Generator[dict[str, Any], Any, None]:
-        yield {
-            "username": random_refs.random_username(),
-            "email": random_refs.random_email(),
-            "password": random_refs.random_valid_password(),
-            "first_name": None,
-            "last_name": None,
-            "backup_email": None,
-            "gender": None,
-            "date_of_birth": None,
-        }
-
     @pytest.mark.usefixtures("mysql_db")
-    def test_registered_successfully_returns_201(
-        self, client: testclient, request_body: dict[str, Any]
+    @pytest.mark.parametrize("request_bodies", [1], indirect=True)
+    def test_register_successfully_returns_204(
+        self, client: fastapi.testclient, request_bodies: List[dict[str, Any]]
     ):
         # arrange
-        expected_response = request_body | {}
+        request_body = request_bodies[0]
 
         # act
-        r = client.post("/register", json=request_body)
+        r = ic(client.post("/register", json=request_body))
 
         # assert
-        print(r.__dict__)
-        assert r.status_code == status.HTTP_201_CREATED
-        resource_json = r.json()["register"]
+        assert r.status_code == fastapi.status.HTTP_204_NO_CONTENT
 
-        assert set(expected_response.keys()).issubset(resource_json.keys())
-        for key in {"id", "created_time", "updated_time"}:
-            assert resource_json.get(key)
+    @pytest.mark.usefixtures("mysql_db")
+    @pytest.mark.parametrize("request_bodies", [1], indirect=True)
+    def test_register_invalid_password_returns_400(
+        self, client: fastapi.testclient, request_bodies: List[dict[str, Any]]
+    ):
+        # arrange
+        request_body = request_bodies[0]
+        request_body["password"] = random_refs.random_invalid_password()
+
+        # act
+        r = ic(client.post("/register", json=request_body))
+
+        # assert
+        assert r.status_code == fastapi.status.HTTP_400_BAD_REQUEST
+        assert r.json()["detail"] == "Invalid password"
+
+    @pytest.mark.usefixtures("mysql_db")
+    @pytest.mark.parametrize("request_bodies", [2], indirect=True)
+    def test_register_email_already_existed_returns_409(
+        self, client: fastapi.testclient, request_bodies: List[dict[str, Any]]
+    ):
+        # arrange
+        request_body_1 = request_bodies[0]
+        request_body_2 = request_bodies[1]
+        request_body_2["email"] = request_body_1["email"]
+        r = ic(client.post("/register", json=request_body_1))
+
+        # act
+        r = ic(client.post("/register", json=request_body_2))
+
+        # assert
+        assert r.status_code == fastapi.status.HTTP_409_CONFLICT
+        assert r.json()["detail"] == f"Email {request_body_1['email']} already existed"
+
+    @pytest.mark.usefixtures("mysql_db")
+    @pytest.mark.parametrize("request_bodies", [2], indirect=True)
+    def test_register_username_already_existed_returns_409(
+        self, client: fastapi.testclient, request_bodies: List[dict[str, Any]]
+    ):
+        # arrange
+        request_body_1 = request_bodies[0]
+        request_body_2 = request_bodies[1]
+        request_body_2["username"] = request_body_1["username"]
+        r = ic(client.post("/register", json=request_body_1))
+
+        # act
+        r = ic(client.post("/register", json=request_body_2))
+
+        # assert
+        assert r.status_code == fastapi.status.HTTP_409_CONFLICT
+        assert r.json()["detail"] == f"Username {request_body_1['username']} already existed"
