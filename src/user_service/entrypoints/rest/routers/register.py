@@ -18,13 +18,17 @@ async def register(cmd: commands.RegisterCommand):
     try:
         dependencies.validate_password(cmd.password)
     except dependencies.InvalidPassword as e:
-        raise fastapi.HTTPException(status_code=fastapi.status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_400_BAD_REQUEST, detail=str(e)
+        )
 
     try:
         cmd = commands.RegisterCommand(**cmd.model_dump())
         bus.handle(cmd)
 
     except (command.EmailExisted, command.UsernameExisted) as e:
-        raise fastapi.HTTPException(status_code=fastapi.status.HTTP_409_CONFLICT, detail=str(e))
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_409_CONFLICT, detail=str(e)
+        )
 
     return fastapi.status.HTTP_204_NO_CONTENT

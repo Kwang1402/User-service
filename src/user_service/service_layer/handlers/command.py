@@ -99,7 +99,7 @@ def verify_two_factor_auth(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
-        users = uow.repo.get(models.User, username=cmd.user_id)
+        users = uow.repo.get(models.User, id=cmd.user_id)
         user = users[0]
 
         if not pyotp.TOTP(user.secret_token).verify(cmd.otp_code):
@@ -117,15 +117,15 @@ def login(
     with uow:
         users = uow.repo.get(models.User, username=cmd.username)
 
-        if users is None:
+        if not users:
             users = uow.repo.get(models.User, email=cmd.username)
-        
-        if users is None:
-            raise IncorrectCredentials("Incorrect email or password")
+
+        if not users:
+            raise IncorrectCredentials("Incorrect username or password")
 
         user = users[0]
         if not pwd_context.verify(cmd.password, user.password):
-            raise IncorrectCredentials("Incorrect email or password")
+            raise IncorrectCredentials("Incorrect username or password")
 
         if not user.two_factor_auth_enabled:
             raise TwoFactorAuthNotEnabled(user.id)
@@ -137,7 +137,7 @@ def reset_password(
 ):
     with uow:
         users = uow.repo.get(models.User, email=cmd.email)
-        if users is None:
+        if users is []:
             raise IncorrectCredentials("Incorrect email or username")
 
         user = users[0]

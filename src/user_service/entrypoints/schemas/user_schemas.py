@@ -52,4 +52,3 @@ class SetupTwoFactorAuthBase(pydantic.BaseModel):
 class VerifyTwoFactorAuthBase(pydantic.BaseModel):
     user_id: str
     otp_code: str
-    

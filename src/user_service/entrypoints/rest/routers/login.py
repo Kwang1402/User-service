@@ -17,13 +17,22 @@ router = fastapi.APIRouter()
 
 
 @router.post("/login", status_code=fastapi.status.HTTP_200_OK)
-async def login(form_data: Annotated[fastapi.security.OAuth2PasswordRequestForm, fastapi.Depends()]) -> login_schemas.Token:
+async def login(
+    form_data: Annotated[fastapi.security.OAuth2PasswordRequestForm, fastapi.Depends()]
+) -> login_schemas.Token:
     try:
-        cmd = commands.LoginCommand(username=form_data.username, password=form_data.password)
+        cmd = commands.LoginCommand(
+            username=form_data.username, password=form_data.password
+        )
         bus.handle(cmd)
-        user = views.fetch_models_from_database(
-            model_type=models.User, uow=bus.uow, message_id=cmd._id
-        )[0]
+        users = views.fetch_models_from_database(
+            model_type=models.User, uow=bus.uow, username=form_data.username
+        )
+        if not users:
+            users = views.fetch_models_from_database(
+                model_type=models.User, uow=bus.uow, email=form_data.username
+            )
+        user = users[0]
 
     except command.IncorrectCredentials as e:
         raise fastapi.HTTPException(
@@ -33,9 +42,13 @@ async def login(form_data: Annotated[fastapi.security.OAuth2PasswordRequestForm,
         )
 
     except command.TwoFactorAuthNotEnabled as e:
-        return fastapi.responses.RedirectResponse(
-            url=f"/users/{e.args[0]}/setup-2fa",
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_403_FORBIDDEN,
+            detail={
+                "message": "Two-factor authentication required. Please set up 2FA",
+                "user_id": e.args[0],
+            },
         )
-    access_token = dependencies.create_access_token(data={"sub": user.id})
+    access_token = dependencies.create_access_token(data={"sub": user["id"]})
 
-    return login_schemas.Token(access_token=access_token, toke_type="bearer")
+    return login_schemas.Token(access_token=access_token, token_type="bearer")

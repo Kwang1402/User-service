@@ -4,6 +4,7 @@ import fastapi.testclient
 import pytest
 import fastapi
 from icecream import ic
+
 from tests import random_refs
 
 
@@ -73,4 +74,7 @@ class TestRegister:
 
         # assert
         assert r.status_code == fastapi.status.HTTP_409_CONFLICT
-        assert r.json()["detail"] == f"Username {request_body_1['username']} already existed"
+        assert (
+            r.json()["detail"]
+            == f"Username {request_body_1['username']} already existed"
+        )

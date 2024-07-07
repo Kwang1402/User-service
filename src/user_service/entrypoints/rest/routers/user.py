@@ -23,7 +23,9 @@ class UserNotFound(Exception):
 
 @router.get("/users/{id}", status_code=fastapi.status.HTTP_200_OK)
 async def get_user(
-    current_user: Annotated[models.User, fastapi.Depends(dependencies.get_current_unlock_user)]
+    current_user: Annotated[
+        models.User, fastapi.Depends(dependencies.get_current_unlock_user)
+    ]
 ):
     return current_user
 
@@ -32,30 +34,32 @@ async def get_user(
     "/users/{id}/setup-2fa",
     status_code=fastapi.status.HTTP_202_ACCEPTED,
 )
-async def setup_two_factor_auth(id: str):
-    cmd = commands.SetupTwoFactorAuthCommand(user_id=id)
+async def setup_two_factor_auth(id: str, cmd: commands.SetupTwoFactorAuthCommand):
     bus.handle(cmd)
 
     return fastapi.status.HTTP_202_ACCEPTED
 
 
 @router.patch(
-    "/user/{id}/verify-2fa",
+    "/users/{id}/verify-2fa",
     status_code=fastapi.status.HTTP_200_OK,
 )
-async def verify_two_factor_auth(id: str, otp_code: str):
+async def verify_two_factor_auth(id: str, cmd: commands.VerifyTwoFactorAuthCommand):
     try:
-        cmd = commands.VerifyTwoFactorAuthCommand(user_id=id, otp_code=otp_code)
         bus.handle(cmd)
 
     except InvalidOTP as e:
-        raise fastapi.HTTPException(status_code=fastapi.status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_400_BAD_REQUEST, detail=str(e)
+        )
 
     return fastapi.status.HTTP_200_OK
 
 
 @router.get(
-    "/user-profiles/{id}", status_code=fastapi.status.HTTP_200_OK, response_model=models.Profile
+    "/users/{id}/profile",
+    status_code=fastapi.status.HTTP_200_OK,
+    response_model=models.Profile,
 )
 async def get_user_profile(username: str):
     try:
@@ -68,6 +72,8 @@ async def get_user_profile(username: str):
             model_type=models.Profile, uow=bus.uow, user_id=user.id
         )[0]
     except UserNotFound as e:
-        raise fastapi.HTTPException(status_code=fastapi.status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_404_NOT_FOUND, detail=str(e)
+        )
 
     return user_profile
