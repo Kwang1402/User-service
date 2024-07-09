@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Dict, Any
 
 import fastapi
 import fastapi.security
@@ -6,8 +6,8 @@ import fastapi.security
 from .. import dependencies
 from user_service import bootstrap
 from user_service.domains import commands, models
-from user_service.entrypoints.schemas import user_schemas
 from user_service.service_layer.handlers.command import InvalidOTP
+from user_service.entrypoints.schemas import user_schemas
 from user_service import views
 
 bus = bootstrap.bootstrap()
@@ -24,10 +24,12 @@ class UserNotFound(Exception):
 @router.get("/users/{id}", status_code=fastapi.status.HTTP_200_OK)
 async def get_user(
     current_user: Annotated[
-        models.User, fastapi.Depends(dependencies.get_current_unlock_user)
+        # models.User
+        Dict[str, Any],
+        fastapi.Depends(dependencies.get_current_unlock_user),
     ]
-):
-    return current_user
+) -> user_schemas.UserReponse:
+    return user_schemas.UserReponse(user=current_user)
 
 
 @router.post(

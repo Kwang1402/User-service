@@ -8,6 +8,7 @@ from icecream import ic
 
 from tests import random_refs
 
+
 @pytest.mark.usefixtures
 class TestLogin:
     @pytest.mark.usefixtures("mysql_db")
@@ -41,11 +42,12 @@ class TestLogin:
         # act
         r = ic(client.post("/login", data=form_data))
         ic(r.__dict__)
+        token = r.json()["token"]
 
         # assert
         assert r.status_code == fastapi.status.HTTP_200_OK
-        assert r.json()["access_token"]
-        assert r.json()["token_type"] == "bearer"
+        assert token["access_token"]
+        assert token["token_type"] == "bearer"
 
     @pytest.mark.usefixtures("mysql_db")
     @pytest.mark.parametrize("request_bodies", [1], indirect=True)
@@ -78,11 +80,12 @@ class TestLogin:
         # act
         r = ic(client.post("/login", data=form_data))
         ic(r.__dict__)
+        token = r.json()["token"]
 
         # assert
         assert r.status_code == fastapi.status.HTTP_200_OK
-        assert r.json()["access_token"]
-        assert r.json()["token_type"] == "bearer"
+        assert token["access_token"]
+        assert token["token_type"] == "bearer"
 
     @pytest.mark.usefixtures("mysql_db")
     @pytest.mark.parametrize("request_bodies", [1], indirect=True)
@@ -95,7 +98,7 @@ class TestLogin:
             "username": request_body["username"],
             "password": request_body["password"],
         }
-        
+
         # act
         r = ic(client.post("/login", data=form_data))
 
@@ -114,14 +117,14 @@ class TestLogin:
             "username": request_body["email"],
             "password": request_body["password"],
         }
-        
+
         # act
         r = ic(client.post("/login", data=form_data))
 
         # assert
         assert r.status_code == fastapi.status.HTTP_401_UNAUTHORIZED
         assert r.json()["detail"] == "Incorrect username or password"
-    
+
     @pytest.mark.usefixtures("mysql_db")
     @pytest.mark.parametrize("request_bodies", [1], indirect=True)
     def test_login_with_incorrect_password_returns_401(
@@ -151,7 +154,7 @@ class TestLogin:
         )
 
         form_data["password"] = random_refs.random_valid_password()
-        
+
         # act
         r = ic(client.post("/login", data=form_data))
         ic(r.__dict__)

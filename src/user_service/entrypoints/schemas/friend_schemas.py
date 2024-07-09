@@ -1,3 +1,4 @@
+from typing import List
 from datetime import datetime
 
 import pydantic
@@ -12,7 +13,6 @@ class FriendRequestSchema(FriendRequestBase):
     model_config = pydantic.ConfigDict(from_attributes=True, extra="allow")
 
     id: str
-    status: str
     created_time: datetime = pydantic.Field(default_factory=datetime.now)
     updated_time: datetime = pydantic.Field(default_factory=datetime.now)
 
@@ -21,6 +21,12 @@ class FriendRequestResponse(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(from_attributes=True)
 
     friend_request: FriendRequestSchema
+
+
+class FriendRequestsResponse(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(from_attributes=True)
+
+    friend_requests: List[FriendRequestSchema]
 
 
 class AcceptFriendRequestBase(pydantic.BaseModel):
@@ -34,18 +40,8 @@ class AcceptFriendRequestSchema(AcceptFriendRequestBase):
 class AcceptFriendRequestResponse(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(from_attributes=True)
 
-    accept_friend_request: AcceptFriendRequestSchema
+    friend_request: AcceptFriendRequestSchema
 
 
 class DeclineFriendRequestBase(pydantic.BaseModel):
     friend_request: FriendRequestSchema
-
-
-class DeclineFriendRequestSchema(DeclineFriendRequestBase):
-    model_config = pydantic.ConfigDict(from_attributes=True, extra="allow")
-
-
-class DeclineFriendRequestResponse(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(from_attributes=True)
-
-    decline_friend_request: DeclineFriendRequestSchema

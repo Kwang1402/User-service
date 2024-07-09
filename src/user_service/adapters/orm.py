@@ -63,7 +63,6 @@ friend_requests = Table(
     Column("id", String(255), primary_key=True),
     Column("sender_id", String(255)),
     Column("receiver_id", String(255)),
-    Column("status", String(255)),
     Column("created_time", TIMESTAMP),
     Column("updated_time", TIMESTAMP),
 )

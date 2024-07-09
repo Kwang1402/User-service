@@ -112,7 +112,6 @@ class FriendRequest(BaseModel):
         super().__init__(message_id)
         self.sender_id = sender_id
         self.receiver_id = receiver_id
-        self.status = "Pending"
 
     def __repr__(self):
         return f"<FriendRequest {self.id}>"

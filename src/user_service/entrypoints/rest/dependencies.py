@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Dict, Any
 from datetime import datetime, timedelta, timezone
 import string
 
@@ -6,6 +6,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from icecream import ic
 
 from user_service import bootstrap
 from user_service.config import SECRET_KEY
@@ -65,18 +66,18 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
             raise credentials_exception
     except InvalidTokenError:
         raise credentials_exception
-    user = views.fetch_models_from_database(
+    users = views.fetch_models_from_database(
         model_type=models.User, uow=bus.uow, id=user_id
     )
 
-    if user is None:
+    if not users:
         raise credentials_exception
-    return user
+    return users[0]
 
 
 async def get_current_unlock_user(
-    current_user: Annotated[models.User, Depends(get_current_user)]
+    current_user: Annotated[Dict[str, Any], Depends(get_current_user)]
 ):
-    if current_user.locked:
+    if current_user["locked"]:
         raise HTTPException(status_code=400, detail="Account locked")
     return current_user

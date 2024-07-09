@@ -137,7 +137,7 @@ def reset_password(
 ):
     with uow:
         users = uow.repo.get(models.User, email=cmd.email)
-        if users is []:
+        if not users:
             raise IncorrectCredentials("Incorrect email or username")
 
         user = users[0]
@@ -155,7 +155,7 @@ def reset_password(
         file.write(f"{new_password}\n")
 
 
-def friend_request(
+def create_friend_request(
     cmd: commands.FriendRequestCommand,
     uow: unit_of_work.AbstractUnitOfWork,
 ):
@@ -174,9 +174,6 @@ def accept_friend_request(
         friend_requests = uow.repo.get(models.FriendRequest, id=cmd.friend_request_id)
 
         friend_request = friend_requests[0]
-        friend_request.status = "Accepted"
-        friend_request.updated_time = datetime.now()
-        friend_request.message_id = cmd._id
 
         friend_request.events.append(
             events.AcceptedFriendRequestEvent(
@@ -184,6 +181,8 @@ def accept_friend_request(
                 receiver_id=friend_request.receiver_id,
             )
         )
+
+        uow.repo.remove(friend_request)
 
         uow.commit()
 
@@ -196,9 +195,8 @@ def decline_friend_request(
         friend_requests = uow.repo.get(models.FriendRequest, id=cmd.friend_request_id)
 
         friend_request = friend_requests[0]
-        friend_request.status = "Declined"
-        friend_request.updated_time = datetime.now()
-        friend_request.message_id = cmd._id
+
+        uow.repo.remove(friend_request)
 
         uow.commit()
 
@@ -209,6 +207,6 @@ COMMAND_HANDLERS = {
     commands.VerifyTwoFactorAuthCommand: verify_two_factor_auth,
     commands.LoginCommand: login,
     commands.ResetPasswordCommand: reset_password,
-    commands.FriendRequestCommand: friend_request,
+    commands.FriendRequestCommand: create_friend_request,
     commands.AcceptFriendRequestCommand: accept_friend_request,
 }  # type: Dict[Type[commands.Command], Callable]

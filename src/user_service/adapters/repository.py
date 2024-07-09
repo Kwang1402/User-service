@@ -12,6 +12,9 @@ class AbstractRepository(abc.ABC):
         self._add(model)
         self.seen.add(model)
 
+    def remove(self, model: models.BaseModel):
+        self._remove(model)
+
     def get(
         self,
         model_type: Type[models.BaseModel],
@@ -36,6 +39,15 @@ class AbstractRepository(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def _remove(
+        self,
+        model: models.BaseModel,
+        *args,
+        **kwargs,
+    ):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def _get(
         self,
         model_type: Type[models.BaseModel],
@@ -52,6 +64,9 @@ class SqlAlchemyRepository(AbstractRepository):
 
     def _add(self, model: models.BaseModel):
         self.session.add(model)
+
+    def _remove(self, model: models.BaseModel):
+        self.session.delete(model)
 
     def _get(
         self,
