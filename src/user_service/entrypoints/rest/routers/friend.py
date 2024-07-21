@@ -51,11 +51,12 @@ async def get_friend_requests(
 
 
 @router.post(
-    "/friend-request/{id}/accept",
+    "/friend-requests/{id}/accept",
     status_code=fastapi.status.HTTP_200_OK,
-    response_model=friend_schemas.AcceptFriendRequestResponse,
 )
-async def accept_friend_request(cmd: commands.AcceptFriendRequestCommand):
+async def accept_friend_request(
+    cmd: commands.AcceptFriendRequestCommand,
+) -> friend_schemas.AcceptFriendRequestResponse:
     bus.handle(cmd)
 
     friend_request = views.fetch_models_from_database(

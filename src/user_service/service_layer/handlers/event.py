@@ -26,11 +26,11 @@ def add_to_friend_list(
         friend = models.Friend(event._id, **event.model_dump())
         uow.repo.add(friend)
 
-        sender_profile = uow.repo.get(models.Profile, user_id=event.sender_id)
+        sender_profile = uow.repo.get(models.Profile, user_id=event.sender_id)[0]
         sender_profile.friends += 1
         sender_profile.updated_time = datetime.now()
 
-        receiver_profile = uow.repo.get(models.Profile, user_id=event.receiver_id)
+        receiver_profile = uow.repo.get(models.Profile, user_id=event.receiver_id)[0]
         receiver_profile.friends += 1
         receiver_profile.updated_time = datetime.now()
 

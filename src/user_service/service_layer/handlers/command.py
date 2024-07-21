@@ -6,6 +6,7 @@ from user_service.domains import commands, events, models
 from user_service.service_layer import unit_of_work
 from passlib.context import CryptContext
 import pyotp
+from icecream import ic
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -171,7 +172,7 @@ def accept_friend_request(
     uow: unit_of_work.AbstractUnitOfWork,
 ):
     with uow:
-        friend_requests = uow.repo.get(models.FriendRequest, id=cmd.friend_request_id)
+        friend_requests = uow.repo.get(models.FriendRequest, id=cmd.friend_request.id)
 
         friend_request = friend_requests[0]
 
@@ -181,8 +182,6 @@ def accept_friend_request(
                 receiver_id=friend_request.receiver_id,
             )
         )
-
-        uow.repo.remove(friend_request)
 
         uow.commit()
 
