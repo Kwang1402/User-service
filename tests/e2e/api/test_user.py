@@ -8,7 +8,7 @@ from icecream import ic
 
 
 @pytest.mark.usefixtures
-class TestLogin:
+class TestUser:
     @pytest.mark.usefixtures("mysql_db")
     @pytest.mark.parametrize("request_bodies", [1], indirect=True)
     def test_get_user_successfully_returns_200(
