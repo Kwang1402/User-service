@@ -1,5 +1,6 @@
 import abc
-from typing import Type
+from typing import Type, List
+
 from user_service.domains import models
 
 
@@ -11,19 +12,34 @@ class AbstractRepository(abc.ABC):
         self._add(model)
         self.seen.add(model)
 
+    def remove(self, model: models.BaseModel):
+        self._remove(model)
+
     def get(
         self,
         model_type: Type[models.BaseModel],
         *args,
         **kwargs,
-    ) -> models.BaseModel:
-        model = self._get(model_type, *args, **kwargs)
-        if model:
-            self.seen.add(model)
-        return model
+    ) -> List[models.BaseModel]:
+        # print("something")
+        results = self._get(model_type, *args, **kwargs)
+        # print(results)
+        if results:
+            for result in results:
+                self.seen.add(result)
+        return results
 
     @abc.abstractmethod
     def _add(
+        self,
+        model: models.BaseModel,
+        *args,
+        **kwargs,
+    ):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _remove(
         self,
         model: models.BaseModel,
         *args,
@@ -37,7 +53,7 @@ class AbstractRepository(abc.ABC):
         model_type: Type[models.BaseModel],
         *args,
         **kwargs,
-    ) -> models.BaseModel:
+    ) -> List[models.BaseModel]:
         raise NotImplementedError
 
 
@@ -49,10 +65,13 @@ class SqlAlchemyRepository(AbstractRepository):
     def _add(self, model: models.BaseModel):
         self.session.add(model)
 
+    def _remove(self, model: models.BaseModel):
+        self.session.delete(model)
+
     def _get(
         self,
         model_type: Type[models.BaseModel],
         *args,
         **kwargs,
-    ) -> models.BaseModel:
-        return self.session.query(model_type).filter_by(**kwargs).one_or_none()
+    ) -> List[models.BaseModel]:
+        return self.session.query(model_type).filter_by(**kwargs).all()
