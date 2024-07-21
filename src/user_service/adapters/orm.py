@@ -102,6 +102,15 @@ def start_mappers():
     _mappers_initialized = True
 
 
-@event.listens_for(models.User, "load")
-def receive_load(user, _):
-    user.events = []
+def receive_load(model, _):
+    model.events = []
+
+
+def register_listeners_for_all_subclasses(base_class):
+    event.listen(base_class, "load", receive_load)
+
+    for subclass in base_class.__subclasses__():
+        register_listeners_for_all_subclasses(subclass)
+
+
+register_listeners_for_all_subclasses(models.BaseModel)
