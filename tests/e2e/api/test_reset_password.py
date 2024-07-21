@@ -8,7 +8,7 @@ from icecream import ic
 
 
 @pytest.mark.usefixtures
-class Test2FA:
+class TestResetPassword:
     @pytest.mark.usefixtures("mysql_db")
     @pytest.mark.parametrize("request_bodies", [1], indirect=True)
     def test_reset_password_successfully_returns_200(
