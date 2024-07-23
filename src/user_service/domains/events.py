@@ -18,5 +18,4 @@ class RegisteredEvent(Event):
 
 
 class AcceptedFriendRequestEvent(Event):
-    sender_id: str
-    receiver_id: str
+    friend_request_id: str

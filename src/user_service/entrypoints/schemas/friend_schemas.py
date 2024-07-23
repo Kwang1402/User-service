@@ -33,11 +33,5 @@ class AcceptFriendRequestBase(pydantic.BaseModel):
     friend_request: FriendRequestSchema
 
 
-class AcceptFriendRequestResponse(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(from_attributes=True)
-
-    friend_request: FriendRequestSchema
-
-
 class DeclineFriendRequestBase(pydantic.BaseModel):
     friend_request: FriendRequestSchema
