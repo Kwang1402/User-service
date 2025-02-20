@@ -15,7 +15,6 @@ bus = bootstrap.bootstrap()
 router = fastapi.APIRouter()
 
 
-# API conventions: https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design
 @router.post(
     "/friend-requests",
     status_code=fastapi.status.HTTP_201_CREATED,
@@ -52,18 +51,14 @@ async def get_friend_requests(
 
 @router.post(
     "/friend-requests/{id}/accept",
-    status_code=fastapi.status.HTTP_200_OK,
+    status_code=fastapi.status.HTTP_201_CREATED,
 )
 async def accept_friend_request(
     cmd: commands.AcceptFriendRequestCommand,
-) -> friend_schemas.AcceptFriendRequestResponse:
+):
     bus.handle(cmd)
 
-    friend_request = views.fetch_models_from_database(
-        model_type=models.FriendRequest, uow=bus.uow, id=cmd.friend_request.id
-    )[0]
-
-    return friend_schemas.AcceptFriendRequestResponse(friend_request=friend_request)
+    return fastapi.status.HTTP_201_CREATED
 
 
 @router.delete(

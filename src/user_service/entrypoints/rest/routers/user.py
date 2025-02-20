@@ -61,21 +61,36 @@ async def verify_two_factor_auth(id: str, cmd: commands.VerifyTwoFactorAuthComma
 @router.get(
     "/users/{id}/profile",
     status_code=fastapi.status.HTTP_200_OK,
-    response_model=models.Profile,
 )
-async def get_user_profile(username: str):
+async def get_user_profile(id: str) -> user_schemas.ProfileReponse:
     try:
-        user = views.fetch_models_from_database(
-            model_type=models.User, uow=bus.uow, username=username
-        )[0]
-        if user is None:
-            raise UserNotFound("User not found")
         user_profile = views.fetch_models_from_database(
-            model_type=models.Profile, uow=bus.uow, user_id=user.id
+            model_type=models.Profile, uow=bus.uow, user_id=id
         )[0]
+        if user_profile is None:
+            raise UserNotFound("User not found")
+
     except UserNotFound as e:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_404_NOT_FOUND, detail=str(e)
         )
 
-    return user_profile
+    return user_schemas.ProfileReponse(profile=user_profile)
+
+
+@router.get(
+    "/users/{id}/friends",
+    status_code=fastapi.status.HTTP_200_OK,
+)
+async def get_user_friends(id: str) -> user_schemas.FriendsResponse:
+    users_1 = views.fetch_models_from_database(
+        model_type=models.Friend, uow=bus.uow, sender_id=id
+    )
+    users_2 = views.fetch_models_from_database(
+        model_type=models.Friend, uow=bus.uow, receiver_id=id
+    )
+    friends = [user["receiver_id"] for user in users_1] + [
+        user["sender_id"] for user in users_2
+    ]
+
+    return user_schemas.FriendsResponse(friends=friends)

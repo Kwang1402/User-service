@@ -1,3 +1,4 @@
+from typing import List
 from datetime import datetime
 import pydantic
 
@@ -52,3 +53,9 @@ class SetupTwoFactorAuthBase(pydantic.BaseModel):
 class VerifyTwoFactorAuthBase(pydantic.BaseModel):
     user_id: str
     otp_code: str
+
+
+class FriendsResponse(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(from_attributes=True)
+
+    friends: List[str]

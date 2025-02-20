@@ -51,8 +51,6 @@ async def login(
             },
         )
 
-    fastapi.responses.RedirectResponse
-
     access_token = dependencies.create_access_token(data={"sub": user["id"]})
     token = login_schemas.Token(access_token=access_token, token_type="bearer")
 

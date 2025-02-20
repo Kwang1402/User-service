@@ -111,7 +111,7 @@ class TestFriend:
 
     @pytest.mark.usefixtures("mysql_db")
     @pytest.mark.parametrize("request_bodies", [2], indirect=True)
-    def test_accept_friend_request_returns_200(
+    def test_accept_friend_request_returns_201(
         self, client: fastapi.testclient, request_bodies: List[dict[str, Any]]
     ):
         # arrange
@@ -176,5 +176,18 @@ class TestFriend:
         ic(r.__dict__)
 
         # assert
-        assert r.status_code == fastapi.status.HTTP_200_OK
-        assert r.json()["friend_request"] == friend_request
+        assert r.status_code == fastapi.status.HTTP_201_CREATED
+
+        r = ic(client.get(f"/users/{user_id_1}/friends"))
+        ic(r.__dict__)
+
+        friends = r.json()["friends"]
+
+        assert friends[0] == user_id_2
+
+        r = ic(client.get(f"/users/{user_id_2}/friends"))
+        ic(r.__dict__)
+
+        friends = r.json()["friends"]
+
+        assert friends[0] == user_id_1

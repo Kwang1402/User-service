@@ -177,10 +177,7 @@ def accept_friend_request(
         friend_request = friend_requests[0]
 
         friend_request.events.append(
-            events.AcceptedFriendRequestEvent(
-                sender_id=friend_request.sender_id,
-                receiver_id=friend_request.receiver_id,
-            )
+            events.AcceptedFriendRequestEvent(friend_request_id=cmd.friend_request.id)
         )
 
         uow.commit()
