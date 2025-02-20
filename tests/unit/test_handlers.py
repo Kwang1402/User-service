@@ -7,7 +7,7 @@ import time
 from user_service.adapters import repository
 from user_service.service_layer import unit_of_work
 from user_service.domains import models, commands
-from user_service.service_layer import handlers
+from user_service.service_layer.handlers import event
 from tests import random_refs
 
 bcrypt = Bcrypt()
@@ -79,7 +79,7 @@ class TestRegister:
 
         data2["email"] = data["email"]
         with pytest.raises(
-            handlers.EmailExisted, match=f"Email {data2['email']} already existed"
+            event.EmailExisted, match=f"Email {data2['email']} already existed"
         ):
             bus.handle(commands.RegisterCommand(**data2))
 
@@ -100,14 +100,14 @@ class TestEnableAndVerify2FA:
 
     def test_enable_2fa_email_does_not_exist(self, data):
         bus = bootstrap_test_app()
-        with pytest.raises(handlers.IncorrectCredentials, match="Email does not exist"):
+        with pytest.raises(event.IncorrectCredentials, match="Email does not exist"):
             bus.handle(commands.EnableTwoFactorAuthCommand(data["email"]))
 
     def test_verify_2fa_email_does_not_exist(self, data):
         bus = bootstrap_test_app()
 
         otp_code = pyotp.TOTP(pyotp.random_base32()).now()
-        with pytest.raises(handlers.IncorrectCredentials, match="Email does not exist"):
+        with pytest.raises(event.IncorrectCredentials, match="Email does not exist"):
             bus.handle(
                 commands.VerifyEnableTwoFactorAuthCommand(data["email"], otp_code)
             )
@@ -117,7 +117,7 @@ class TestEnableAndVerify2FA:
         bus.handle(commands.RegisterCommand(**data))
 
         otp_code = pyotp.TOTP(pyotp.random_base32()).now()
-        with pytest.raises(handlers.InvalidOTP, match="Invalid OTP code"):
+        with pytest.raises(event.InvalidOTP, match="Invalid OTP code"):
             bus.handle(
                 commands.VerifyEnableTwoFactorAuthCommand(data["email"], otp_code)
             )
@@ -134,7 +134,7 @@ class TestEnableAndVerify2FA:
         otp_code = results[0]
 
         time.sleep(30)
-        with pytest.raises(handlers.InvalidOTP, match="Invalid OTP code"):
+        with pytest.raises(event.InvalidOTP, match="Invalid OTP code"):
             bus.handle(
                 commands.VerifyEnableTwoFactorAuthCommand(data["email"], otp_code)
             )
@@ -163,7 +163,7 @@ class TestLogin:
         bus = bootstrap_test_app()
 
         with pytest.raises(
-            handlers.IncorrectCredentials, match="Incorrect email or password"
+            event.IncorrectCredentials, match="Incorrect email or password"
         ):
             bus.handle(
                 commands.LoginCommand(
@@ -177,7 +177,7 @@ class TestLogin:
         bus.handle(commands.RegisterCommand(**data))
 
         with pytest.raises(
-            handlers.IncorrectCredentials, match="Incorrect email or password"
+            event.IncorrectCredentials, match="Incorrect email or password"
         ):
             bus.handle(
                 commands.LoginCommand(
@@ -224,7 +224,7 @@ class TestResetPassword:
         bus = bootstrap_test_app()
 
         with pytest.raises(
-            handlers.IncorrectCredentials, match="Incorrect email or username"
+            event.IncorrectCredentials, match="Incorrect email or username"
         ):
             bus.handle(
                 commands.ResetPasswordCommand(
@@ -237,7 +237,7 @@ class TestResetPassword:
         bus.handle(commands.RegisterCommand(**data))
 
         with pytest.raises(
-            handlers.IncorrectCredentials, match="Incorrect email or username"
+            event.IncorrectCredentials, match="Incorrect email or username"
         ):
             bus.handle(
                 commands.ResetPasswordCommand(

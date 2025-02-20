@@ -1,7 +1,9 @@
 import inspect
 from user_service.adapters import orm
-from user_service.service_layer import handlers, message_bus, unit_of_work
+from user_service.service_layer import message_bus, unit_of_work
 import typing as t
+
+from user_service.service_layer.handlers import command, event
 
 
 def bootstrap(
@@ -19,11 +21,11 @@ def bootstrap(
         event_type: [
             inject_dependencies(handler, dependencies) for handler in event_handlers
         ]
-        for event_type, event_handlers in handlers.EVENT_HANDLERS.items()
+        for event_type, event_handlers in event.EVENT_HANDLERS.items()
     }
     injected_command_handlers = {
         command_type: inject_dependencies(handler, dependencies)
-        for command_type, handler in handlers.COMMAND_HANDLERS.items()
+        for command_type, handler in command.COMMAND_HANDLERS.items()
     }
 
     return message_bus.MessageBus(

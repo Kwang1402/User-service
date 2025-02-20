@@ -1,45 +1,44 @@
-import dataclasses
-from datetime import date
+from user_service.domains import Message
+from user_service.entrypoints.schemas import (
+    friend_schemas,
+    register_schemas,
+    reset_password_schemas,
+    user_schemas,
+)
 
 
-class Command:
-    pass
+class Command(Message):
+    """"""
 
 
-@dataclasses.dataclass
-class RegisterCommand(Command):
-    username: str
-    email: str
-    password: str
-    backup_email: str
-    gender: str
-    date_of_birth: date
+class RegisterCommand(Command, register_schemas.RegisterBase):
+    """"""
 
 
-@dataclasses.dataclass
-class EnableTwoFactorAuthCommand(Command):
-    user_id: str
+class SetupTwoFactorAuthCommand(Command, user_schemas.SetupTwoFactorAuthBase):
+    """"""
 
 
-@dataclasses.dataclass
-class VerifyEnableTwoFactorAuthCommand(Command):
-    user_id: str
-    otp_code: str
+class VerifyTwoFactorAuthCommand(Command, user_schemas.VerifyTwoFactorAuthBase):
+    """"""
 
 
-@dataclasses.dataclass
 class LoginCommand(Command):
-    email: str
+    username: str
     password: str
 
 
-@dataclasses.dataclass
-class GetUserCommand(Command):
-    user_id: str
-    token: str
+class ResetPasswordCommand(Command, reset_password_schemas.ResetPasswordBase):
+    """"""
 
 
-@dataclasses.dataclass
-class ResetPasswordCommand(Command):
-    email: str
-    username: str
+class FriendRequestCommand(Command, friend_schemas.FriendRequestBase):
+    """"""
+
+
+class AcceptFriendRequestCommand(Command, friend_schemas.AcceptFriendRequestBase):
+    """"""
+
+
+class DeclineFriendRequestCommand(Command, friend_schemas.DeclineFriendRequestBase):
+    """"""
